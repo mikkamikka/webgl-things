@@ -1,0 +1,432 @@
+
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>viz</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				color: #ffffff;
+				font-family:Monospace;
+				font-size:13px;
+				text-align:center;
+				font-weight: bold;
+
+				background-color: #000000;
+				margin: 0px;
+				overflow: hidden;
+			}
+
+			#info {
+				position: absolute;
+				top: 0px; width: 100%;
+				padding: 5px;
+			}
+
+			a {
+				color: #ffffff;
+			}
+
+			#oldie a { color:#da0 }
+			video {
+				position: absolute;
+				top: 100px; left: 0px;
+				width: 170px;
+				z-index: 100;
+			}
+		</style>
+	</head>
+	<body>
+
+		<div id="container"></div>
+		<!--div id="info"><a href="http://threejs.org" target="_blank">three.js</a> - raw shader demo</div-->
+
+<!--
+		<video id="my_video" width="640" height="240" controls>
+            <source src="image/DSC_0753.mp4" type="video/mp4"/>
+    </video>
+-->
+		<video id="video" autoplay >
+			<source src="image/waves3.ogg" type='video/ogg; codecs="theora, vorbis"'>
+				<!--source src="image/sintel.ogv" type='video/ogg; codecs="theora, vorbis"'-->
+		</video>
+
+		<script src="libs/three.js"></script>
+
+		<script src="libs/Detector.js"></script>
+		<script src="libs/stats.min.js"></script>
+    <script src="libs/controls/OrbitControls.js"></script>
+    <script src="js/geometry.js"></script>
+
+		<script id="vertexShader" type="x-shader/x-vertex">
+
+		varying vec2 vUv;
+		varying vec3 vNormal;
+		varying vec3 vReflect;
+		varying float ao;
+		uniform float time;
+		uniform float weight;
+		uniform vec2 resolution;
+
+		uniform sampler2D displacementMap;
+		uniform float displacementScale;
+		uniform float displacementBias;
+
+		uniform float normalsRatio;
+
+		void main() {
+
+			vec3 transformed = position;
+
+			//displacement mapping
+			transformed += normal * ( texture2D( displacementMap, uv ).x * displacementScale + displacementBias );
+
+			vec3 tut = texture2D( displacementMap, uv ).xyz;
+
+			float aspect = resolution.x/resolution.y;
+			float dx = 0.5 / resolution.x;
+		  float dy = dx * aspect;
+
+    	vec4 dy1 = texture2D( displacementMap, uv + vec2( 0.0, dy ) );
+			vec4 dy2 = texture2D( displacementMap, uv + vec2( 0.0, -dy ) );
+
+		  vec4 dx1 = texture2D( displacementMap, uv + vec2( dx, 0.0 ) );
+		  vec4 dx2 = texture2D( displacementMap, uv + vec2( -dx, 0.0 ) );
+
+		  vec4 d5 = texture2D( displacementMap, uv + vec2( dx, dy ) );
+		  vec4 d6 = texture2D( displacementMap, uv + vec2( -dx, -dy ) );
+		  vec4 d7 = texture2D( displacementMap, uv + vec2( dx, -dy ) );
+		  vec4 d8 = texture2D( displacementMap, uv + vec2( -dx, dy ) );
+
+			//float difX = dx1.x - dx2.x + d5.x - d6.x + d7.x - d8.x;
+			//float difY = dy1.y - dy2.y + d5.y - d6.y + d7.y - d8.y;
+			float difX = dx1.x - dx2.x;
+			float difY = dy1.y - dy2.y;
+
+			vec3 modifiedNormal = normalize( normal + normalsRatio * vec3( difX, difY, 0.0 ) );
+
+			vNormal = modifiedNormal;
+			vUv = uv;
+
+			vec3 nWorld = normalize( mat3( modelMatrix[0].xyz, modelMatrix[1].xyz, modelMatrix[2].xyz ) * modifiedNormal );
+
+			vReflect = normalize( reflect( normalize( transformed.xyz - cameraPosition ), nWorld ) );
+
+			gl_Position = projectionMatrix * modelViewMatrix * vec4( transformed, 1.0 );
+
+		}
+
+		</script>
+
+		<script id="fragmentShader" type="x-shader/x-fragment">
+
+		varying vec2 vUv;
+		varying vec3 vNormal;
+		varying vec3 vReflect;
+		varying float ao;
+		uniform sampler2D tShine;
+		uniform float time;
+
+		float PI = 3.14159265358979323846264;
+
+		void main() {
+
+			float yaw = .5 - atan( vReflect.z, - vReflect.x ) / ( 2.0 * PI );
+			float pitch = .5 - asin( vReflect.y ) / PI;
+			vec2 pos = vec2( yaw, pitch );
+			vec3 color = texture2D( tShine, pos ).rgb;
+
+			gl_FragColor = vec4( color , 1.0 );
+
+		}
+
+		</script>
+
+		<script>
+
+			if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
+
+			var container, stats;
+
+			var camera, scene, renderer;
+      var object, edges, material;
+			var video, video_texture, textureSphere;
+
+			init();
+			animate();
+
+      function createMy( radius ) {
+
+				var geometry = new THREE.IcosahedronGeometry( radius, 7 );
+
+				// material
+
+				material = new THREE.ShaderMaterial( {
+
+					uniforms: {
+
+						"displacementMap" : { type: "t", value: video_texture },
+						"displacementScale" : { type: "f", value: 60 },
+						"displacementBias" : { type: "f", value: 0 },
+
+						//"normalMap" : { type: "t", value: video_texture },
+						//"normalScale" : { type: "v2", value: new THREE.Vector2( 1, 1 ) },
+
+						"resolution" : { type: "v2", value: new THREE.Vector2( 300, 300 ) },
+						"normalsRatio" : { type: "f", value: 10.0 },
+
+						tShine: { type: "t", value: textureSphere },
+						time: { type: "f", value: 0 },
+						weight: { type: "f", value: 0 }
+					},
+					vertexShader: document.getElementById( 'vertexShader' ).textContent,
+					fragmentShader: document.getElementById( 'fragmentShader' ).textContent,
+
+					//side: THREE.DoubleSide,
+					shading: THREE.FlatShading
+
+				} );
+
+				var mesh = new THREE.Mesh( geometry, material );
+        return mesh;
+      }
+
+      function createSphere (radius) {
+
+        //var geometry = new THREE.SphereGeometry( radius, 320, 160 );
+				var geometry = new THREE.IcosahedronGeometry( radius, 7 );
+        var material = new THREE.MeshPhongMaterial( {
+          color: 0xffffff,
+          specular: 0x666666,
+					shininess: 15,
+          emissive: 0x000000,
+
+					metal: true,
+
+          //polygonOffset: true,
+          //polygonOffsetFactor: 100,
+          //polygonOffsetUnits: 10,
+
+          //side: THREE.DoubleSide,
+
+          //transparent: true,
+          //opacity: 0.99,
+
+          //map: THREE.ImageUtils.loadTexture( "image/pluto.jpg" ),
+					//map: video_texture,
+          //bumpMap:
+          //lightMap:
+          //aoMap:
+
+          //emissiveMap: THREE.ImageUtils.loadTexture( "image/roid_displ4.jpg" ),
+					//emissiveMap: video_texture,
+
+          //specularMap:
+          //alphaMap:
+
+          envMap: textureSphere,
+					//reflectivity: 0,
+					//refractionRatio: 0.99,
+
+          //normalMap: THREE.ImageUtils.loadTexture( "image/noise_ao.jpg" ),
+					//normalMap: video_texture,
+					//normalScale: new THREE.Vector2( 1, 1),
+
+          //displacementMap: THREE.ImageUtils.loadTexture( "image/roid_displ4.jpg" ),
+					displacementMap: video_texture,
+					displacementScale: 30.0,
+
+          shading: THREE.FlatShading
+
+          //morphTargets: false
+
+					//wireframe: true,
+					//wireframeLinewidth: 4,
+					//wireframeLinecap:'round',
+					//wireframeLinejoin: 'round'
+
+
+        } );
+        var mesh = new THREE.Mesh( geometry, material );
+
+        // var mesh = new THREE.Object3D();
+  			// mesh.add( new THREE.LineSegments(
+  			// 	new THREE.Geometry(),
+  			// 	new THREE.LineBasicMaterial({	color: 0xffffff,	transparent: true, opacity: 0.5	})
+  			// ));
+  			// mesh.add( new THREE.Mesh(
+  			// 	new THREE.Geometry(),
+  			// 	new THREE.MeshPhongMaterial({	color: 0x156289,	emissive: 0x072534,	side: THREE.DoubleSide,	shading: THREE.FlatShading })
+  			// ));
+
+        return mesh;
+
+      }
+
+
+			function init() {
+
+				container = document.getElementById( 'container' );
+
+				camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 1000 );
+				camera.position.z = 500;
+
+				scene = new THREE.Scene();
+
+        var ambientLight = new THREE.AmbientLight( 0x666666 );
+        scene.add( ambientLight );
+
+        var lights = [];
+        lights[0] = new THREE.PointLight( 0xffffff, 1, 0 );
+        lights[1] = new THREE.PointLight( 0xffffff, 1, 0 );
+        lights[2] = new THREE.PointLight( 0xffffff, 1, 0 );
+
+        lights[0].position.set( 0, 600, 0 );
+        lights[1].position.set( 100, 600, 100 );
+        lights[2].position.set( -100, -600, -400 );
+
+        scene.add( lights[0] );
+        scene.add( lights[1] );
+        scene.add( lights[2] );
+
+
+				// geometry
+
+				//var triangles = createTriangles(500);
+
+				video = document.getElementById('video');
+				video.playbackRate = 1.0;
+				//video.loop = true;
+
+				video.addEventListener("ended", function() {
+
+					video.load();
+					console.log("replay");
+
+				}, true);
+
+				video_texture = new THREE.VideoTexture( video );
+				video_texture.minFilter = THREE.LinearFilter;
+				video_texture.magFilter = THREE.LinearFilter;
+				video_texture.format = THREE.RGBFormat;
+
+				textureSphere = THREE.ImageUtils.loadTexture( "image/pluto.jpg" );
+				textureSphere.mapping = THREE.SphericalReflectionMapping;
+				//textureSphere.mapping = THREE.EquirectangularRefractionMapping;
+
+				//object = createSphere(60);
+
+				object = createMy(60);
+
+				edges = new THREE.FaceNormalsHelper( object, 2, 0x00ff00, 1 );
+
+				scene.add( object );
+				//scene.add( edges );
+
+				renderer = new THREE.WebGLRenderer({
+						antialias: true
+				});
+
+				//renderer.gammaInput = true;
+				//renderer.gammaOutput = true;
+				renderer.physicallyBasedShading = true;
+
+				renderer.setClearColor( 0x101010 );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				container.appendChild( renderer.domElement );
+
+
+
+        var orbit = new THREE.OrbitControls( camera, renderer.domElement );
+        //orbit.enableZoom = false;
+
+				stats = new Stats();
+				stats.domElement.style.position = 'absolute';
+				stats.domElement.style.top = '0px';
+				container.appendChild( stats.domElement );
+
+				window.addEventListener( 'resize', onWindowResize, false );
+
+
+				//createVideoTexture();
+
+
+			}
+
+			function createVideoTexture(){
+				var canPlayMp4	= document.createElement('video').canPlayType('video/mp4') !== '' ? true : false;
+				var canPlayOgg	= document.createElement('video').canPlayType('video/ogg') !== '' ? true : false;
+				if( canPlayMp4 ){
+					var url	= 'image/sintel.mp4';
+				}else if( canPlayOgg ){
+					var url	= 'image/sintel.ogv';
+				}else	alert('cant play mp4 or ogv');
+
+				// create the videoTexture
+				video_texture= new THREE.VideoTexture(url);
+				video	= video_texture.video;
+				//updateFcts.push(function(delta, now){
+				//	videoTexture.update(delta, now)
+				//});
+			}
+
+			function onWindowResize( event ) {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+			window.onclick = function(event){
+
+				video.paused ? video.play() : video.pause();
+
+			}
+
+
+
+			//
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+
+				render();
+				stats.update();
+
+			}
+
+			var start = Date.now();
+
+			function render() {
+
+				var time = performance.now();
+
+				//var object = scene.children[ 0 ];
+
+				//object.material.map = video_texture;
+				//object.material.needsUpdate	= true;
+
+				//object.geometry.computeFaceNormals();
+				//object.geometry.computeVertexNormals();
+				//edges.update();
+
+				material.uniforms[ 'time' ].value = .00025 * ( Date.now() - start );
+				//material.uniforms[ 'weight' ].value = 10.0 * ( .5 + .5 * Math.sin( .00025 * ( Date.now() - start ) ) );
+				material.uniforms[ 'weight' ].value = 1.0;
+
+				object.rotation.y = time * 0.000005;
+				//object.material.uniforms.time.value = time * 0.005;
+
+				renderer.render( scene, camera );
+
+			}
+
+		</script>
+
+	</body>
+</html>
