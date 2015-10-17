@@ -17,57 +17,57 @@
         margin: 0px;
         overflow: hidden;
       }
-			#info {
-				position: absolute;
-				bottom: 0px; width: 100%;
-				padding: 5px;
-			}
+      #info {
+        position: absolute;
+        bottom: 0px; width: 100%;
+        padding: 5px;
+      }
       #gui {
         right: 0;
         position: absolute;
         top: 0;
         z-index:100;
       }
-			#video_buttons {
-				position: absolute;
+      #video_buttons {
+        position: absolute;
         top: 50%; transform: translateY(-50%);
         left: 0px;
         width: 170px;
         z-index: 100;
-			}
+      }
       video {
-				width: 100%;
-				display:block;
-				padding: 4px;
+        width: 100%;
+        display:block;
+        padding: 4px;
       }
     </style>
   </head>
   <body>
 
-		<div id="info"> Video texture displacement/height map + vertex normals estimation from displacement texture</div>
+    <div id="info"> Video texture displacement/height map + vertex normals estimation from displacement texture</div>
     <div id="container"></div>
 
 
-		<div id="video_buttons">
-			<div style="font-weight: normal">Click to play/pause</div>
-			<div id="buttons">
-		    <video autoplay accessKey="0" >
-		      <source src="image/waves3.ogg" type='video/ogg; codecs="theora, vorbis"'>
-		    </video>
-		    <video accessKey="1">
-		      <source src="image/waves4.ogg" type='video/ogg; codecs="theora, vorbis"'>
-		    </video>
-		    <video accessKey="2">
-		      <source src="image/waves2.ogg" type='video/ogg; codecs="theora, vorbis"'>
-		    </video>
-				<video accessKey="3">
-		      <source src="image/waves5.ogg" type='video/ogg; codecs="theora, vorbis"'>
-		    </video>
-				<video accessKey="4">
-		      <source src="image/waves6.ogg" type='video/ogg; codecs="theora, vorbis"'>
-		    </video>
-			</div>
-		</div>
+    <div id="video_buttons">
+      <div style="font-weight: normal">Click to play/pause</div>
+      <div id="buttons">
+        <video autoplay accessKey="0" >
+          <source src="image/waves3.ogg" type='video/ogg; codecs="theora, vorbis"'>
+        </video>
+        <video accessKey="1">
+          <source src="image/waves4.ogg" type='video/ogg; codecs="theora, vorbis"'>
+        </video>
+        <video accessKey="2">
+          <source src="image/waves2.ogg" type='video/ogg; codecs="theora, vorbis"'>
+        </video>
+        <video accessKey="3">
+          <source src="image/waves5.ogg" type='video/ogg; codecs="theora, vorbis"'>
+        </video>
+        <video accessKey="4">
+          <source src="image/waves6.ogg" type='video/ogg; codecs="theora, vorbis"'>
+        </video>
+      </div>
+    </div>
 
 
     <div id="gui"></div>
@@ -109,7 +109,7 @@
       //vNormal = normal;
       vUv = uv;
 
-			float mean = ( texture2D( displacementMap, uv ).x + texture2D( displacementMap, uv ).y + texture2D( displacementMap, uv ).z ) / 3.0;
+      float mean = ( texture2D( displacementMap, uv ).x + texture2D( displacementMap, uv ).y + texture2D( displacementMap, uv ).z ) / 3.0;
 
       transformed += normal * ( mean * displacementScale + displacementBias );
 
@@ -130,10 +130,10 @@
 
       if (mode > 0.5){
 
-				vec4 d5 = texture2D( displacementMap, uv + vec2( dx, dy ) );
-	      vec4 d6 = texture2D( displacementMap, uv + vec2( -dx, -dy ) );
-	      vec4 d7 = texture2D( displacementMap, uv + vec2( dx, -dy ) );
-	      vec4 d8 = texture2D( displacementMap, uv + vec2( -dx, dy ) );
+        vec4 d5 = texture2D( displacementMap, uv + vec2( dx, dy ) );
+        vec4 d6 = texture2D( displacementMap, uv + vec2( -dx, -dy ) );
+        vec4 d7 = texture2D( displacementMap, uv + vec2( dx, -dy ) );
+        vec4 d8 = texture2D( displacementMap, uv + vec2( -dx, dy ) );
 
         difX = ( dx1.x - dx2.x + d5.x - d6.x + d7.x - d8.x ) / 3.0;
         difY = ( dy1.y - dy2.y + d5.y - d6.y + d7.y - d8.y ) / 3.0;
@@ -273,9 +273,9 @@
 
       }
 
-			function addLights() {
+      function addLights() {
 
-				var ambientLight = new THREE.AmbientLight( 0x666666 );
+        var ambientLight = new THREE.AmbientLight( 0x666666 );
         scene.add( ambientLight );
 
         var lights = [];
@@ -291,7 +291,7 @@
         scene.add( lights[1] );
         scene.add( lights[2] );
 
-			}
+      }
 
       function init() {
 
@@ -304,41 +304,41 @@
 
         addLights();
 
-				var btns = document.getElementById('buttons').children;
+        var btns = document.getElementById('buttons').children;
 
-				for (var i=0; i < btns.length; i++){
+        for (var i=0; i < btns.length; i++){
 
-					video[i] = btns[i];
-					video[i].playbackRate = 1.0;
+          video[i] = btns[i];
+          video[i].playbackRate = 1.0;
 
-					video[i].addEventListener("ended", function(args) {
+          video[i].addEventListener("ended", function(args) {
 
-						var ix = args.target.accessKey;
-						//video[ix].currentTime = 0;
-						//video[ix].play();
-						video[ix].load();
+            var ix = args.target.accessKey;
+            //video[ix].currentTime = 0;
+            //video[ix].play();
+            video[ix].load();
 
-					});
+          });
 
-					video[i].addEventListener("click", function(args) {
+          video[i].addEventListener("click", function(args) {
 
-						var other_btns = args.target.parentElement.children;
-						var ix = args.target.accessKey;
-						for (var i=0; i < other_btns.length; i++){
-							if (i != ix) video[i].pause();
-						}
-						video[ix].paused ? video[ix].play() : video[ix].pause();
+            var other_btns = args.target.parentElement.children;
+            var ix = args.target.accessKey;
+            for (var i=0; i < other_btns.length; i++){
+              if (i != ix) video[i].pause();
+            }
+            video[ix].paused ? video[ix].play() : video[ix].pause();
 
-						video_texture = new THREE.VideoTexture( video[ix] );
-						video_texture.minFilter = THREE.LinearFilter;
-						video_texture.magFilter = THREE.LinearFilter;
-						video_texture.format = THREE.RGBFormat;
+            video_texture = new THREE.VideoTexture( video[ix] );
+            video_texture.minFilter = THREE.LinearFilter;
+            video_texture.magFilter = THREE.LinearFilter;
+            video_texture.format = THREE.RGBFormat;
 
-						material.uniforms[ 'displacementMap' ].value = video_texture;
+            material.uniforms[ 'displacementMap' ].value = video_texture;
 
-					});
+          });
 
-				}
+        }
 
         video_texture = new THREE.VideoTexture( video[0] );
         video_texture.minFilter = THREE.LinearFilter;
@@ -351,7 +351,7 @@
 
         object = createThing(60);
 
-				object.rotation.y = Math.PI / 2;
+        object.rotation.y = Math.PI / 2;
 
         scene.add( object );
 
