@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>test</title>
+</head>
+<body>
+
+<script type="x-shader/x-fragment" id="fragmentShader">
+
+            #ifdef GL_ES
+			precision highp float;
+			#endif
+			uniform vec2 resolution;
+			uniform sampler2D texture;
+			void main() {
+				  vec2 uv = gl_FragCoord.xy / resolution.xy;
+				  gl_FragColor = texture2D( texture, uv );
+			}
+
+			//#include <packing>
+			//uniform sampler2D texture;
+			//varying vec2 vUV;
+			//void main() {
+			//	vec4 pixel = texture2D( texture, vUV );
+			//	if ( pixel.a < 0.5 ) discard;
+			//	//gl_FragData[ 0 ] = packDepthToRGBA( gl_FragCoord.z );
+			//	gl_FragData[ 0 ] = pixel;
+
+			}
+		</script>
+
+<script type="x-shader/x-vertex" id="vertexShader">
+
+            attribute vec3 position;
+			void main() {
+				  gl_Position = vec4( position, 1.0 );
+			}
+
+			//varying vec2 vUV;
+			//void main() {
+			//	vUV = 0.75 * uv;
+			//	vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+			//	gl_Position = projectionMatrix * mvPosition;
+			//}
+
+		</script>
+
+
+
+<!--script src="js/Cloth.js"></script-->
+
+<script src="js/draw.js"></script>
+
+</body>
+</html>
