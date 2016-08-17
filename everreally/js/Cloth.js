@@ -10,9 +10,9 @@
 // http://cg.alexandra.dk/tag/spring-mass-system/
 // Real-time Cloth Animation http://www.darwin3d.com/gamedev/articles/col0599.pdf
 
-var DAMPING = 0.06;
+var DAMPING = 0.03;
 var DRAG = 1 - DAMPING;
-var MASS = 0.01;
+var MASS = 0.6;
 var restDistance = 25;
 
 var xSegs = 10;
@@ -22,7 +22,7 @@ var clothFunction = plane( restDistance * xSegs, restDistance * ySegs );
 
 var cloth = new Cloth( xSegs, ySegs );
 
-var GRAVITY = 280 * 1.4;
+var GRAVITY = 80 * 1.4;
 var gravity = new THREE.Vector3( 0, - GRAVITY, 0 ).multiplyScalar( MASS );
 
 

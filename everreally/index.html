@@ -79,27 +79,6 @@
     init();
     animate();
 
-    function getBase64Image(img) {
-        // Create an empty canvas element
-        var canvas = document.createElement("canvas");
-        canvas.width = img.width;
-        canvas.height = img.height;
-
-        // Copy the image contents to the canvas
-        var ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0);
-
-        // Get the data-URL formatted image
-        // Firefox supports PNG and JPEG. You could check img.src to
-        // guess the original format, but be aware the using "image/jpg"
-        // will re-encode the image.
-        var dataURL = canvas.toDataURL("images/logo.png");
-
-        return dataURL;
-
-        //return dataURL.replace(/^data:image\/(png|jpg);base64,/, "");
-    }
-
     function init() {
 
         container = document.getElementById( 'logo' );
@@ -214,10 +193,12 @@
 
         var time = Date.now();
 
-        windStrength = Math.cos( time / 20000 ) * 1;
-        windForce.set( Math.sin( time / 10000 ), Math.cos( time / 10000 ), Math.sin( time / 200 ) ).normalize().multiplyScalar( windStrength );
+        windStrength = Math.cos( time / 20000 ) * 5;
+        //windForce.set( Math.sin( time / 10000 ), Math.cos( time / 10000 ), Math.sin( time / 200 ) ).normalize().multiplyScalar( windStrength );
 
-        windForce.z *= 2;
+        windForce.x = Math.sin( time / 2000 ) * Math.cos( time / 2000 ) ;
+        windForce.z = Math.cos( time / 2000 ) * Math.cos( time / 2000 );
+        windForce.z = ( -0.1 + Math.sin( time / 3000 ) ) * 30;
 
         simulate( time );
         render();
