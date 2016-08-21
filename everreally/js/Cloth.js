@@ -2,49 +2,36 @@
  * Cloth Simulation using a relaxed constrains solver
  */
 
-var flag = new Flag( 16, 20, 60 );
-
 function Flag( w, h, windStrengthIn ) {
 
     var addMotion = true;
-
     var DAMPING = 0.03;
     var DRAG = 1 - DAMPING;
     var MASS = 0.1;
     var restDistance = 20;
-
     var xSegs = w;
     var ySegs = h;
-
     var clothFunction = plane(restDistance * xSegs, restDistance * ySegs);
     var cloth = new Cloth(xSegs, ySegs);
-
     var GRAVITY = 800;
     var gravity = new THREE.Vector3(0, -GRAVITY, 0).multiplyScalar(MASS);
-
     var TIMESTEP = 0.018;
     var TIMESTEP_SQ = TIMESTEP * TIMESTEP;
-
     var pins = [];
     var wind = true;
     var windStrength = 2;
     var windForce = new THREE.Vector3(0, 0, 0);
-
     var ballPosition = new THREE.Vector3(0, 0, 0);
     var ballSize = 60; //40
     var tmpForce = new THREE.Vector3();
     var lastTime;
-
     var raycaster = new THREE.Raycaster(), intersects;
 
     function plane(width, height) {
-
         return function (u, v) {
-
             var x = ( u - 0.5 ) * width;
             var y = ( v + 0.5 ) * height;
             var z = 0;
-
             return new THREE.Vector3(x, y, z);
         };
     }
@@ -68,7 +55,6 @@ function Flag( w, h, windStrengthIn ) {
         this.a.add(
             this.tmp2.copy(force).multiplyScalar(this.invMass)
         );
-
     };
 
 // Performs verlet integration
@@ -193,10 +179,6 @@ function Flag( w, h, windStrengthIn ) {
         ballPosition.z = -Math.sin(Date.now() / 600) * 90; //+ 40;
         ballPosition.x = Math.cos(Date.now() / 400) * 70;
 
-        //ballPosition.x = mouse.x * 100;
-        //ballPosition.y = mouse.y * 100;
-        //ballPosition.z = mouse.x * 100;
-
         var amp = 8;
 
         if ( addMotion) {
@@ -265,7 +247,7 @@ function Flag( w, h, windStrengthIn ) {
         camera = new THREE.PerspectiveCamera(30, width / height, 1, 10000);
         camera.position.x = 0;
         camera.position.y = 0;
-        camera.position.z = 600;//500;
+        camera.position.z = 600;
         scene.add(camera);
 
         this.camera = camera;
@@ -305,16 +287,6 @@ function Flag( w, h, windStrengthIn ) {
         object.castShadow = true;
         scene.add(object);
 
-        // var uniforms = {texture: {value: clothTexture}};
-        // var vertexShader = document.getElementById('vertexShaderDepth').textContent;
-        // var fragmentShader = document.getElementById('fragmentShaderDepth').textContent;
-       // object.customDepthMaterial = new THREE.ShaderMaterial( {
-       //     uniforms: uniforms,
-       //     vertexShader: vertexShader,
-       //     fragmentShader: fragmentShader,
-       //     side: THREE.DoubleSide
-       // } );
-
         // sphere
         var ballGeo = new THREE.SphereGeometry(ballSize, 20, 20);
         var ballMaterial = new THREE.MeshPhongMaterial({color: 0xaaaaaa});
@@ -325,10 +297,7 @@ function Flag( w, h, windStrengthIn ) {
         // renderer
         renderer = new THREE.WebGLRenderer({antialias: true, alpha: true});
         renderer.setPixelRatio(window.devicePixelRatio);
-        //renderer.setSize( window.innerWidth, window.innerHeight );
         renderer.setSize( width, height );
-        //renderer.setClearColor( 0xffffff );
-
         container.appendChild(renderer.domElement);
 
         renderer.gammaInput = true;
@@ -372,7 +341,6 @@ function Flag( w, h, windStrengthIn ) {
         var dirY = -Math.abs(0.3 * Math.cos(time / 3E2));// + affectVec.y*10;
         var dirZ = 1 * Math.cos(time / 2E2);
         windForce.set(dirX, dirY, dirZ).normalize().multiplyScalar(windStrength);
-        //windForce.set(dirX, dirY, dirZ).normalize().multiplyScalar(0);
 
         simulate(time);
         render();
