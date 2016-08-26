@@ -2,7 +2,7 @@
  * Cloth Simulation using a relaxed constrains solver
  */
 
-function Flag( w, h, windStrengthIn ) {
+function Flag( w, h, windStrengthIn, debug ) {
 
     var addMotion = true;
     var DAMPING = 0.03;
@@ -19,13 +19,21 @@ function Flag( w, h, windStrengthIn ) {
     var TIMESTEP_SQ = TIMESTEP * TIMESTEP;
     var pins = [];
     var wind = true;
-    var windStrength = 2;
-    var windForce = new THREE.Vector3(0, 0, 0);
-    var ballPosition = new THREE.Vector3(0, 0, 0);
-    var ballSize = 60; //40
+    var windStrength = windStrengthIn;
+    this.windStrength = windStrength;
+    var windForce = new THREE.Vector3();
+    var ballPosition = new THREE.Vector3();
+    var ballPositionAlias = new THREE.Vector3();
+    var ballSize = 50; //40
     var tmpForce = new THREE.Vector3();
     var lastTime;
     var raycaster = new THREE.Raycaster(), intersects;
+    var props = {
+        windStrength: windStrength,
+        freqX: 1000,
+        freqY: 300,
+        freqZ: 200
+    };
 
     function plane(width, height) {
         return function (u, v) {
@@ -176,29 +184,36 @@ function Flag( w, h, windStrengthIn ) {
         }
 
         // Ball Constrains
-        ballPosition.z = -Math.sin(Date.now() / 600) * 90; //+ 40;
-        ballPosition.x = Math.cos(Date.now() / 400) * 70;
+        //ballPosition.z = -Math.sin(Date.now() / 600) * 90; //+ 40;
+        //ballPosition.x = Math.cos(Date.now() / 400) * 70;
 
         var amp = 8;
 
         if ( addMotion) {
 
+            var vector = new THREE.Vector3();
+            vector.set( mouse.x, mouse.y, 0.5 );
+            vector.unproject( camera );
+            var dir = vector.sub( camera.position ).normalize();
+            var distance = - camera.position.z / dir.z;
+            var posMouse = camera.position.clone().add( dir.multiplyScalar( distance ) );
+            posMouse.z += 2;
+
+            ballPosition.copy( posMouse );
+
             for (particles = cloth.particles, i = 0, il = particles.length; i < il; i++) {
 
                 particle = particles[i];
                 pos = particle.position;
-                diff.subVectors(pos, ballPosition);
+                ballPositionAlias.copy( ballPosition );
+                ballPositionAlias.y += 350;
+                diff.subVectors(pos, ballPositionAlias);
                 var length = diff.length();
+
                 if (length < ballSize) {
                     // collided
                     diff.normalize().multiplyScalar(ballSize);
-                    pos.copy(ballPosition).add(diff);
-                }
-                if (intersects) {
-                    if (intersects.length>0) {
-                        pos.x += affectVec.x * 40;
-                        pos.y += affectVec.y * 40;
-                    }
+                    pos.copy(ballPositionAlias).add(diff);
                 }
             }
         }
@@ -226,9 +241,10 @@ function Flag( w, h, windStrengthIn ) {
     var clothGeometry, clothTexture;
     var sphere;
     var object;
-    var mouse = new THREE.Vector2(), prevMouse = new THREE.Vector2(), affectVec = new THREE.Vector2(),
+    var mouse = new THREE.Vector2(-1,-1), prevMouse = new THREE.Vector2(), affectVec = new THREE.Vector2(),
         interacting = false,
         INTERSECTED;
+    var time, dirX, dirY, dirZ;
 
     init();
     animate();
@@ -307,40 +323,41 @@ function Flag( w, h, windStrengthIn ) {
         document.addEventListener('mousedown', onMouseDown, false);
         document.addEventListener('mouseup', onMouseUp, false);
 
+        if ( debug ) {
+            var gui = new dat.GUI();
+            gui.add( props, 'windStrength', 0, 100 );
+            gui.add( props, 'freqX', 10, 1000 );
+            gui.add( props, 'freqY', 10, 1000 );
+            gui.add( props, 'freqZ', 10, 1000 );
+        }
+
     }
 
     function onMouseMove(event) {
         event.preventDefault();
         mouse.x = ( event.clientX / renderer.domElement.width ) * 2 - 1;
         mouse.y = -( event.clientY / renderer.domElement.height ) * 2 + 1;
-        affectVec.subVectors( mouse, prevMouse );
-        prevMouse.copy( mouse );
-
-        if (interacting) {
-            raycaster.setFromCamera( mouse, camera );
-            intersects = raycaster.intersectObjects( [ object ] );
-        }
+        //affectVec.subVectors( mouse, prevMouse );
     }
 
     function onMouseDown(event) {
         event.preventDefault();
-        interacting = true;
+        //interacting = true;
     }
     function onMouseUp(event) {
         event.preventDefault();
-        interacting = false;
+        //interacting = false;
         intersects = undefined;
     }
 
     function animate() {
 
         requestAnimationFrame(animate);
-        var time = Date.now();
-        windStrength = windStrengthIn;
-        var dirX = 0.1 * Math.sin(time / 2E3);// + affectVec.x*10;
-        var dirY = -Math.abs(0.3 * Math.cos(time / 3E2));// + affectVec.y*10;
-        var dirZ = 1 * Math.cos(time / 2E2);
-        windForce.set(dirX, dirY, dirZ).normalize().multiplyScalar(windStrength);
+        time = Date.now();
+        dirX = 1 * Math.sin(time / props.freqX);// + affectVec.x*10;
+        dirY = -Math.abs(1.3 * Math.cos(time / props.freqY));// + affectVec.y*10;
+        dirZ = 1 * Math.cos(time / props.freqZ);
+        windForce.set(dirX, dirY, dirZ).normalize().multiplyScalar(props.windStrength);
 
         simulate(time);
         render();
