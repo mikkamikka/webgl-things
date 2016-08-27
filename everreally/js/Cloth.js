@@ -189,6 +189,12 @@ function Flag( w, h, windStrengthIn, debug ) {
 
         var amp = 8;
 
+        var still = true, motionWeight = 0;
+        for ( var i = 0; i < 10; i++ ){
+            motionWeight += Math.abs( stillStack[i] );
+        }
+        if ( motionWeight / 10 > 0.05 ) still = false; else still = true;
+
         if ( addMotion) {
 
             var vector = new THREE.Vector3();
@@ -197,7 +203,8 @@ function Flag( w, h, windStrengthIn, debug ) {
             } else {
 
                 var diffX = motion.x - prevMotion.x;
-                if ( Math.abs( diffX ) > 0.1 ) {
+                //if ( Math.abs( diffX ) > 0.1 ) {
+                if ( ! still ) {
                     var vecX = orientation.g / 60;
                     vector.set(vecX, 0, 0.5);
                 } else {
@@ -261,6 +268,7 @@ function Flag( w, h, windStrengthIn, debug ) {
     var orientation = { a: null, b: null, g: null };
     var motion = { x: null, y: null, z: null };
     var prevMotion = { x: null, y: null, z: null };
+    var stillStack = [0,0,0,0,0,0,0,0,0,0], stillCount = 0;
 
     init();
     animate();
@@ -373,6 +381,9 @@ function Flag( w, h, windStrengthIn, debug ) {
 
                 motion.x = Number( event.acceleration.x );
 
+                stillStack[i] = motion.x;
+                if ( stillCount > 8 ) stillCount = 0;
+                else stillCount++;
             }
 
         });
