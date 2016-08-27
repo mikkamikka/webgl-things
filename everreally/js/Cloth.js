@@ -322,6 +322,10 @@ function Flag( w, h, windStrengthIn, debug ) {
         container.addEventListener('mousemove', onMouseMove, false);
         document.addEventListener('mousedown', onMouseDown, false);
         document.addEventListener('mouseup', onMouseUp, false);
+        window.addEventListener('deviceorientation', function(event) {
+            console.log(event.alpha + ' : ' + event.beta + ' : ' + event.gamma);
+            dbg.innerHTML = event.alpha + ' : ' + event.beta + ' : ' + event.gamma;
+        });
 
         if ( debug ) {
             var gui = new dat.GUI();
