@@ -192,7 +192,12 @@ function Flag( w, h, windStrengthIn, debug ) {
         if ( addMotion) {
 
             var vector = new THREE.Vector3();
-            vector.set( mouse.x, mouse.y, 0.5 );
+            if ( orientation.a !== null ) {
+                vector.set(mouse.x, mouse.y, 0.5);
+            } else {
+
+
+            }
             vector.unproject( camera );
             var dir = vector.sub( camera.position ).normalize();
             var distance = - camera.position.z / dir.z;
@@ -245,6 +250,7 @@ function Flag( w, h, windStrengthIn, debug ) {
         interacting = false,
         INTERSECTED;
     var time, dirX, dirY, dirZ;
+    var orientation = { a: null, b: null, g: null };
 
     init();
     animate();
@@ -323,8 +329,24 @@ function Flag( w, h, windStrengthIn, debug ) {
         document.addEventListener('mousedown', onMouseDown, false);
         document.addEventListener('mouseup', onMouseUp, false);
         window.addEventListener('deviceorientation', function(event) {
-            //console.log(event.alpha + ' : ' + event.beta + ' : ' + event.gamma);
-            dbg.innerHTML = event.alpha.toFixed(0) + ' : ' + event.beta.toFixed(0) + ' : ' + event.gamma.toFixed(0);
+
+            if ( event.alpha !== null ) {
+                orientation.a = Number(event.alpha);
+                orientation.b = Number(event.beta);
+                orientation.g = Number(event.gamma);
+                dbg.innerHTML = event.alpha.toFixed(0) + ' : ' + event.beta.toFixed(0) + ' : ' + event.gamma.toFixed(0);
+            }
+        });
+        window.addEventListener('devicemotion', function(event) {
+
+            //if ( event.alpha !== null ) {
+               // orientation.a = Number(event.alpha);
+                //orientation.b = Number(event.beta);
+                //orientation.g = Number(event.gamma);
+                dbg.innerHTML = event.accelerationIncludingGravity.x.toFixed(0) + ' : ' +
+                    event.accelerationIncludingGravity.y.toFixed(0) + ' : ' +
+                    event.accelerationIncludingGravity.z.toFixed(0);
+            //}
         });
 
         if ( debug ) {
