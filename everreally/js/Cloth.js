@@ -33,7 +33,7 @@ function Flag( w, h, windStrengthIn, debug ) {
         freqX: 1000,
         freqY: 268,
         freqZ: 750,
-        stillFactorM: 0.01
+        stillFactorM: 0.05
     };
 
     function plane(width, height) {
@@ -235,6 +235,7 @@ function Flag( w, h, windStrengthIn, debug ) {
 
                 if (length < ballSize) {
                     // collided
+                    if ( ! still ) ballSize = 70;
                     diff.normalize().multiplyScalar(ballSize);
                     pos.copy(ballPositionAlias).add(diff);
                 }
@@ -397,7 +398,7 @@ function Flag( w, h, windStrengthIn, debug ) {
             gui.add( props, 'freqX', 10, 1000 );
             gui.add( props, 'freqY', 10, 1000 );
             gui.add( props, 'freqZ', 10, 1000 );
-            gui.add( props, 'stillFactorM', 0.005, 0.05 );
+            gui.add( props, 'stillFactorM', 0.005, 0.5 );
         }
 
     }
