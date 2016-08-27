@@ -323,8 +323,8 @@ function Flag( w, h, windStrengthIn, debug ) {
         document.addEventListener('mousedown', onMouseDown, false);
         document.addEventListener('mouseup', onMouseUp, false);
         window.addEventListener('deviceorientation', function(event) {
-            console.log(event.alpha + ' : ' + event.beta + ' : ' + event.gamma);
-            dbg.innerHTML = event.alpha + ' : ' + event.beta + ' : ' + event.gamma;
+            //console.log(event.alpha + ' : ' + event.beta + ' : ' + event.gamma);
+            dbg.innerHTML = event.alpha.toFixed(0) + ' : ' + event.beta.toFixed(0) + ' : ' + event.gamma.toFixed(0);
         });
 
         if ( debug ) {
