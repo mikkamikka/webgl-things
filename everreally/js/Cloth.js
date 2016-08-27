@@ -251,6 +251,7 @@ function Flag( w, h, windStrengthIn, debug ) {
         INTERSECTED;
     var time, dirX, dirY, dirZ;
     var orientation = { a: null, b: null, g: null };
+    var motion = { x: null, y: null, z: null };
 
     init();
     animate();
@@ -334,19 +335,37 @@ function Flag( w, h, windStrengthIn, debug ) {
                 orientation.a = Number(event.alpha);
                 orientation.b = Number(event.beta);
                 orientation.g = Number(event.gamma);
-                dbg.innerHTML = event.alpha.toFixed(0) + ' : ' + event.beta.toFixed(0) + ' : ' + event.gamma.toFixed(0);
+                if ( debug )
+                    dbg.innerHTML = event.alpha.toFixed(0) + ' : ' + event.beta.toFixed(0) + ' : ' + event.gamma.toFixed(0);
             }
         });
         window.addEventListener('devicemotion', function(event) {
-
             //if ( event.alpha !== null ) {
                // orientation.a = Number(event.alpha);
                 //orientation.b = Number(event.beta);
                 //orientation.g = Number(event.gamma);
-                dbg_mo.innerHTML = event.accelerationIncludingGravity.x.toFixed(2) + ' : ' +
-                    event.accelerationIncludingGravity.y.toFixed(2) + ' : ' +
-                    event.accelerationIncludingGravity.z.toFixed(2);
-            //}
+            // if ( debug )
+            //     dbg_mo.innerHTML = event.accelerationIncludingGravity.x.toFixed(2) + ' : ' +
+            //         event.accelerationIncludingGravity.y.toFixed(2) + ' : ' +
+            //         event.accelerationIncludingGravity.z.toFixed(2);
+            // //}
+            // if ( event.accelerationIncludingGravity.x !== null ) {
+            //
+            //     motion.x = Number( event.accelerationIncludingGravity.x );
+            //
+            // }
+
+            if ( debug )
+                dbg_mo.innerHTML = event.acceleration.x.toFixed(2) + ' : ' +
+                    event.acceleration.y.toFixed(2) + ' : ' +
+                    event.acceleration.z.toFixed(2);
+
+            if ( event.acceleration.x !== null ) {
+
+                motion.x = Number( event.acceleration.x );
+
+            }
+
         });
 
         if ( debug ) {
