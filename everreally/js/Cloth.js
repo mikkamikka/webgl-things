@@ -31,8 +31,9 @@ function Flag( w, h, windStrengthIn, debug ) {
     var props = {
         windStrength: windStrength,
         freqX: 1000,
-        freqY: 300,
-        freqZ: 200
+        freqY: 268,
+        freqZ: 750,
+        stillFactorM: 0.01
     };
 
     function plane(width, height) {
@@ -193,7 +194,7 @@ function Flag( w, h, windStrengthIn, debug ) {
         for ( var i = 0; i < 10; i++ ){
             motionWeight += Math.abs( stillStack[i] );
         }
-        if ( motionWeight / 10 > 0.05 ) still = false; else still = true;
+        if ( motionWeight / 10 > props.stillFactorM ) still = false; else still = true;
 
         if ( addMotion) {
 
@@ -394,6 +395,7 @@ function Flag( w, h, windStrengthIn, debug ) {
             gui.add( props, 'freqX', 10, 1000 );
             gui.add( props, 'freqY', 10, 1000 );
             gui.add( props, 'freqZ', 10, 1000 );
+            gui.add( props, 'stillFactorM', 0.005, 0.05 );
         }
 
     }
