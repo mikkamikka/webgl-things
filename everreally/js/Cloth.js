@@ -33,7 +33,8 @@ function Flag( w, h, windStrengthIn, debug ) {
         freqX: 1000,
         freqY: 268,
         freqZ: 750,
-        stillFactorM: 0.05
+        stillFactorM: 0.3,
+        ballVisible: false
     };
 
     function plane(width, height) {
@@ -230,6 +231,7 @@ function Flag( w, h, windStrengthIn, debug ) {
                 pos = particle.position;
                 ballPositionAlias.copy( ballPosition );
                 ballPositionAlias.y += 350;
+                ballPositionAlias.z = pos.z/2;
                 diff.subVectors(pos, ballPositionAlias);
                 var length = diff.length();
 
@@ -336,7 +338,7 @@ function Flag( w, h, windStrengthIn, debug ) {
         var ballMaterial = new THREE.MeshPhongMaterial({color: 0xaaaaaa, transparent: true, opacity: 0.3});
         sphere = new THREE.Mesh(ballGeo, ballMaterial);
         scene.add(sphere);
-        sphere.visible = true;
+        sphere.visible = props.ballVisible;
 
         // renderer
         renderer = new THREE.WebGLRenderer({antialias: true, alpha: true});
@@ -399,6 +401,7 @@ function Flag( w, h, windStrengthIn, debug ) {
             gui.add( props, 'freqY', 10, 1000 );
             gui.add( props, 'freqZ', 10, 1000 );
             gui.add( props, 'stillFactorM', 0.005, 0.5 );
+            gui.add( props, 'ballVisible' ).onChange( function(val){ sphere.visible = val;});
         }
 
     }
