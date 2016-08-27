@@ -192,10 +192,15 @@ function Flag( w, h, windStrengthIn, debug ) {
         if ( addMotion) {
 
             var vector = new THREE.Vector3();
-            if ( orientation.a !== null ) {
+            if ( orientation.a === null ) {
                 vector.set(mouse.x, mouse.y, 0.5);
             } else {
-
+                if ( Math.abs( motion.x ) > 1 ) {
+                    var vecX = orientation.g / 80;
+                    vector.set(vecX, 0, 0.5);
+                } else {
+                    vector.set(-1, -1, -2);
+                }
 
             }
             vector.unproject( camera );
