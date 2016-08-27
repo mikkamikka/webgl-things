@@ -194,7 +194,9 @@ function Flag( w, h, windStrengthIn, debug ) {
         for ( var i = 0; i < 10; i++ ){
             motionWeight += Math.abs( stillStack[i] );
         }
-        if ( motionWeight / 10 > props.stillFactorM ) still = false; else still = true;
+        if ( motionWeight / 10 > props.stillFactorM ) still = false;
+
+        dbg_still.innerHTML = motionWeight;
 
         if ( addMotion) {
 
