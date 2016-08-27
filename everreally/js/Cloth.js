@@ -343,9 +343,9 @@ function Flag( w, h, windStrengthIn, debug ) {
                // orientation.a = Number(event.alpha);
                 //orientation.b = Number(event.beta);
                 //orientation.g = Number(event.gamma);
-                dbg.innerHTML = event.accelerationIncludingGravity.x.toFixed(0) + ' : ' +
-                    event.accelerationIncludingGravity.y.toFixed(0) + ' : ' +
-                    event.accelerationIncludingGravity.z.toFixed(0);
+                dbg_mo.innerHTML = event.accelerationIncludingGravity.x.toFixed(2) + ' : ' +
+                    event.accelerationIncludingGravity.y.toFixed(2) + ' : ' +
+                    event.accelerationIncludingGravity.z.toFixed(2);
             //}
         });
 
