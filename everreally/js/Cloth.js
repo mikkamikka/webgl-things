@@ -194,7 +194,7 @@ function Flag( w, h, windStrengthIn, debug ) {
         for ( var i = 0; i < 10; i++ ){
             motionWeight += Math.abs( stillStack[i] );
         }
-        if ( motionWeight / 10 > props.stillFactorM ) still = false;
+        if ( ( motionWeight / 10 ) > props.stillFactorM ) still = false;
 
         dbg_still.innerHTML = motionWeight;
 
@@ -385,7 +385,7 @@ function Flag( w, h, windStrengthIn, debug ) {
                 motion.x = Number( event.acceleration.x );
 
                 stillStack[i] = motion.x;
-                if ( stillCount > 8 ) stillCount = 0;
+                if ( stillCount > 8 ) {stillCount = 0;}
                 else stillCount++;
             }
 
