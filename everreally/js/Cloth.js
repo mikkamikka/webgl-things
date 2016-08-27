@@ -195,12 +195,15 @@ function Flag( w, h, windStrengthIn, debug ) {
             if ( orientation.a === null ) {
                 vector.set(mouse.x, mouse.y, 0.5);
             } else {
-                if ( Math.abs( motion.x ) > 1 ) {
-                    var vecX = orientation.g / 80;
+
+                var diffX = motion.x - prevMotion.x;
+                if ( Math.abs( diffX ) > 0.1 ) {
+                    var vecX = orientation.g / 60;
                     vector.set(vecX, 0, 0.5);
                 } else {
                     vector.set(-1, -1, -2);
                 }
+                prevMotion.x = motion.x;
 
             }
             vector.unproject( camera );
@@ -257,6 +260,7 @@ function Flag( w, h, windStrengthIn, debug ) {
     var time, dirX, dirY, dirZ;
     var orientation = { a: null, b: null, g: null };
     var motion = { x: null, y: null, z: null };
+    var prevMotion = { x: null, y: null, z: null };
 
     init();
     animate();
