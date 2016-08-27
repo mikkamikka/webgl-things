@@ -384,7 +384,7 @@ function Flag( w, h, windStrengthIn, debug ) {
 
                 motion.x = Number( event.acceleration.x );
 
-                stillStack[i] = motion.x;
+                stillStack[stillCount] = motion.x;
                 if ( stillCount > 8 ) {stillCount = 0;}
                 else stillCount++;
             }
