@@ -317,10 +317,10 @@ function Flag( w, h, windStrengthIn, debug ) {
 
         // sphere
         var ballGeo = new THREE.SphereGeometry(ballSize, 20, 20);
-        var ballMaterial = new THREE.MeshPhongMaterial({color: 0xaaaaaa});
+        var ballMaterial = new THREE.MeshPhongMaterial({color: 0xaaaaaa, transparent: true, opacity: 0.3});
         sphere = new THREE.Mesh(ballGeo, ballMaterial);
         scene.add(sphere);
-        sphere.visible = false;
+        sphere.visible = true;
 
         // renderer
         renderer = new THREE.WebGLRenderer({antialias: true, alpha: true});
