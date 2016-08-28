@@ -267,7 +267,7 @@ function Flag( w, h, windStrengthIn, debug ) {
     var clothGeometry, clothTexture;
     var sphere;
     var object;
-    var mouse = new THREE.Vector2(-1,-1), prevMouse = new THREE.Vector2(), affectVec = new THREE.Vector2(),
+    var mouse = new THREE.Vector2(-2,-2), prevMouse = new THREE.Vector2(), affectVec = new THREE.Vector2(),
         interacting = false,
         INTERSECTED;
     var time, dirX, dirY, dirZ;
@@ -425,8 +425,8 @@ function Flag( w, h, windStrengthIn, debug ) {
     }
     function onMouseLeave(event) {
         event.preventDefault();
-        mouse.x = -1;
-        mouse.y = -1;
+        mouse.x = -2;
+        mouse.y = -2;
     }
 
     function animate() {
