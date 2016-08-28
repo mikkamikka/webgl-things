@@ -352,6 +352,7 @@ function Flag( w, h, windStrengthIn, debug ) {
         container.addEventListener('mousemove', onMouseMove, false);
         document.addEventListener('mousedown', onMouseDown, false);
         document.addEventListener('mouseup', onMouseUp, false);
+        container.addEventListener('mouseleave', onMouseLeave, false);
         window.addEventListener('deviceorientation', function(event) {
 
             if ( event.alpha !== null ) {
@@ -421,6 +422,11 @@ function Flag( w, h, windStrengthIn, debug ) {
         event.preventDefault();
         //interacting = false;
         intersects = undefined;
+    }
+    function onMouseLeave(event) {
+        event.preventDefault();
+        mouse.x = -1;
+        mouse.y = -1;
     }
 
     function animate() {
