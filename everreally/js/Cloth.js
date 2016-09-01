@@ -409,8 +409,8 @@ function Flag( w, h, windStrengthIn, debug ) {
 
     function onMouseMove(event) {
         event.preventDefault();
-        mouse.x = ( event.clientX / renderer.domElement.width ) * 2 - 1;
-        mouse.y = -( event.clientY / renderer.domElement.height ) * 2 + 1;
+        mouse.x = ( event.clientX / renderer.domElement.width * window.devicePixelRatio ) * 2 - 1;
+        mouse.y = -( event.clientY / renderer.domElement.height * window.devicePixelRatio ) * 2 + 1;
         //affectVec.subVectors( mouse, prevMouse );
     }
 
