@@ -274,7 +274,10 @@ function Flag( w, h, windStrengthIn, debug ) {
     var orientation = { a: null, b: null, g: null };
     var motion = { x: null, y: null, z: null };
     var prevMotion = { x: null, y: null, z: null };
-    var stillStack = [0,0,0,0,0,0,0,0,0,0], stillCount = 0;
+    var stillStack = [], stillCount = 0, stackSize = 20;
+    for ( var i = 0; i < stackSize; i++ ){
+        stillStack.push( 0 );
+    }
 
     init();
     animate();
@@ -379,17 +382,17 @@ function Flag( w, h, windStrengthIn, debug ) {
             //
             // }
 
-            if ( debug )
-                dbg_mo.innerHTML = event.acceleration.x.toFixed(2) + ' : ' +
-                    event.acceleration.y.toFixed(2) + ' : ' +
-                    event.acceleration.z.toFixed(2);
-
             if ( event.acceleration.x !== null ) {
+
+                if ( debug )
+                    dbg_mo.innerHTML = event.acceleration.x.toFixed(2) + ' : ' +
+                        event.acceleration.y.toFixed(2) + ' : ' +
+                        event.acceleration.z.toFixed(2);
 
                 motion.x = Number( event.acceleration.x );
 
                 stillStack[stillCount] = motion.x;
-                if ( stillCount > 8 ) {stillCount = 0;}
+                if ( stillCount > stackSize - 1 ) {stillCount = 0;}
                 else stillCount++;
             }
 
@@ -401,7 +404,7 @@ function Flag( w, h, windStrengthIn, debug ) {
             gui.add( props, 'freqX', 10, 1000 );
             gui.add( props, 'freqY', 10, 1000 );
             gui.add( props, 'freqZ', 10, 1000 );
-            gui.add( props, 'stillFactorM', 0.005, 0.5 );
+            gui.add( props, 'stillFactorM', 0.005, 1 );
             gui.add( props, 'ballVisible' ).onChange( function(val){ sphere.visible = val;});
         }
 
