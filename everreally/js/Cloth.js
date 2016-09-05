@@ -34,7 +34,7 @@ function Flag( w, h, windStrengthIn, debug ) {
         freqY: 268,
         freqZ: 750,
         stillFactorM: 0.00,
-        sensitivity: 1.5,
+        sensitivity: 1.0,
         ballVisible: false
     };
 
