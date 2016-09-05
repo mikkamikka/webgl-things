@@ -33,7 +33,7 @@ function Flag( w, h, windStrengthIn, debug ) {
         freqX: 1000,
         freqY: 268,
         freqZ: 750,
-        stillFactorM: 0.3,
+        stillFactorM: 0.05,
         sensitivity: 1.5,
         ballVisible: false
     };
@@ -190,13 +190,15 @@ function Flag( w, h, windStrengthIn, debug ) {
         //ballPosition.z = -Math.sin(Date.now() / 600) * 90; //+ 40;
         //ballPosition.x = Math.cos(Date.now() / 400) * 70;
 
-        var amp = 8;
+       // var amp = 8;
 
-        var still = true, motionWeight = 0;
-        for ( var i = 0; i < 10; i++ ){
-            motionWeight += Math.abs( stillStack[i] );
+        if ( orientation.a !== null ) {
+            var still = true, motionWeight = 0;
+            for (var i = 0; i < stackSize; i++) {
+                motionWeight += Math.abs(stillStack[i]);
+            }
+            if (( motionWeight / stackSize ) > props.stillFactorM) still = false;
         }
-        if ( ( motionWeight / stackSize ) > props.stillFactorM ) still = false;
 
         if ( debug ) dbg_still.innerHTML = motionWeight / stackSize;
 
