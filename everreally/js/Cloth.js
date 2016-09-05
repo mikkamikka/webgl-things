@@ -34,6 +34,7 @@ function Flag( w, h, windStrengthIn, debug ) {
         freqY: 268,
         freqZ: 750,
         stillFactorM: 0.3,
+        sensitivity: 1.5,
         ballVisible: false
     };
 
@@ -209,8 +210,8 @@ function Flag( w, h, windStrengthIn, debug ) {
                 var diffX = motion.x - prevMotion.x;
                 //if ( Math.abs( diffX ) > 0.1 ) {
                 if ( ! still ) {
-                    var vecX = orientation.g / 60;
-                    var vecY = orientation.b / 45 + 1.0;
+                    var vecX = ( orientation.g / 60 ) * props.sensitivity;
+                    var vecY = - ( orientation.b / 45 - 1.0 ) * props.sensitivity;
                     vector.set(vecX, vecY, 0.5);
                 } else {
                     vector.set(-1, -1, -2);
@@ -407,6 +408,7 @@ function Flag( w, h, windStrengthIn, debug ) {
             gui.add( props, 'freqY', 10, 1000 );
             gui.add( props, 'freqZ', 10, 1000 );
             gui.add( props, 'stillFactorM', 0.005, 1 );
+            gui.add( props, 'sensitivity', 0.5, 3 );
             gui.add( props, 'ballVisible' ).onChange( function(val){ sphere.visible = val;});
         }
 
