@@ -210,7 +210,7 @@ function Flag( w, h, windStrengthIn, debug ) {
                 //if ( Math.abs( diffX ) > 0.1 ) {
                 if ( ! still ) {
                     var vecX = orientation.g / 60;
-                    var vecY = orientation.b / 45 - 1;
+                    var vecY = orientation.b / 45 + 1.0;
                     vector.set(vecX, vecY, 0.5);
                 } else {
                     vector.set(-1, -1, -2);
@@ -253,7 +253,6 @@ function Flag( w, h, windStrengthIn, debug ) {
             var p = particles[xy];
             p.position.copy(p.original);
             p.previous.copy(p.original);
-
         }
     }
 
@@ -394,7 +393,7 @@ function Flag( w, h, windStrengthIn, debug ) {
 
                 motion.x = Number( event.acceleration.x );
 
-                stillStack[stillCount] = motion.x;
+                stillStack[stillCount] = ( motion.x + motion.y + motion.z ) / 3;
                 if ( stillCount > stackSize - 1 ) {stillCount = 0;}
                 else stillCount++;
             }
