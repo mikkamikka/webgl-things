@@ -195,9 +195,9 @@ function Flag( w, h, windStrengthIn, debug ) {
         for ( var i = 0; i < 10; i++ ){
             motionWeight += Math.abs( stillStack[i] );
         }
-        if ( ( motionWeight / 10 ) > props.stillFactorM ) still = false;
+        if ( ( motionWeight / stackSize ) > props.stillFactorM ) still = false;
 
-        dbg_still.innerHTML = motionWeight;
+        if ( debug ) dbg_still.innerHTML = motionWeight / stackSize;
 
         if ( addMotion) {
 
@@ -210,13 +210,16 @@ function Flag( w, h, windStrengthIn, debug ) {
                 //if ( Math.abs( diffX ) > 0.1 ) {
                 if ( ! still ) {
                     var vecX = orientation.g / 60;
-                    vector.set(vecX, 0, 0.5);
+                    var vecY = orientation.b / 45 - 1;
+                    vector.set(vecX, vecY, 0.5);
                 } else {
                     vector.set(-1, -1, -2);
                 }
                 prevMotion.x = motion.x;
-
             }
+
+
+
             vector.unproject( camera );
             var dir = vector.sub( camera.position ).normalize();
             var distance = - camera.position.z / dir.z;
@@ -231,7 +234,7 @@ function Flag( w, h, windStrengthIn, debug ) {
                 pos = particle.position;
                 ballPositionAlias.copy( ballPosition );
                 ballPositionAlias.y += 350;
-                ballPositionAlias.z = pos.z/2;
+                ballPositionAlias.z = pos.z / 2;// + ballSize / 2;
                 diff.subVectors(pos, ballPositionAlias);
                 var length = diff.length();
 
