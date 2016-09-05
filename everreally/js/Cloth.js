@@ -33,7 +33,7 @@ function Flag( w, h, windStrengthIn, debug ) {
         freqX: 1000,
         freqY: 268,
         freqZ: 750,
-        stillFactorM: 0.05,
+        stillFactorM: 0.00,
         sensitivity: 1.5,
         ballVisible: false
     };
@@ -207,7 +207,7 @@ function Flag( w, h, windStrengthIn, debug ) {
             var vector = new THREE.Vector3();
             if ( orientation.a === null ) {
                 vector.set(mouse.x, mouse.y, 0.5);
-            } else {
+            } else {  // if on mobile
 
                 var diffX = motion.x - prevMotion.x;
                 //if ( Math.abs( diffX ) > 0.1 ) {
@@ -409,7 +409,7 @@ function Flag( w, h, windStrengthIn, debug ) {
             gui.add( props, 'freqX', 10, 1000 );
             gui.add( props, 'freqY', 10, 1000 );
             gui.add( props, 'freqZ', 10, 1000 );
-            gui.add( props, 'stillFactorM', 0.005, 1 );
+            gui.add( props, 'stillFactorM', 0.0, 0.1 );
             gui.add( props, 'sensitivity', 0.5, 3 );
             gui.add( props, 'ballVisible' ).onChange( function(val){ sphere.visible = val;});
         }
