@@ -316,7 +316,12 @@ function Flag( w, h, windStrengthIn, debug ) {
 
         // cloth material
         var loader = new THREE.TextureLoader();
-        clothTexture = loader.load('images/logo.png');
+        clothTexture = loader.load('images/logo_rect.png');
+
+        clothTexture.generateMipmaps = false;
+        clothTexture.minFilter = THREE.LinearFilter;
+        clothTexture.magFilter = THREE.LinearFilter;
+
         //clothTexture.wrapS = clothTexture.wrapT = THREE.RepeatWrapping;
         //clothTexture.anisotropy = 16;
 
@@ -333,9 +338,11 @@ function Flag( w, h, windStrengthIn, debug ) {
         // cloth mesh
 
         object = new THREE.Mesh(clothGeometry, clothMaterial);
-        object.position.set(0, -170, 0);
-        object.scale.x = 1.1;
-        object.scale.y = 0.8;
+        object.position.set(0, -250, 0);
+        // object.scale.x = 1.1;
+        // object.scale.y = 0.8;
+        object.scale.x = 1.0;
+        object.scale.y = 1.0;
 
         object.scale.multiplyScalar(0.70);
         object.castShadow = true;
