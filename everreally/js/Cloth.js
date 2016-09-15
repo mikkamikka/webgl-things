@@ -260,10 +260,12 @@ function Flag( w, h, windStrengthIn, debug ) {
     }
 
 // renderer
-
+    var _this = this;
     var pinsFormation = [];
     for (var pins = [], j = 0; j <= cloth.w; j++)
-        pins.push(cloth.index(j, cloth.h));
+       pins.push(cloth.index(j, cloth.h));
+    // for (var pins = [], j = 0; j <= cloth.h; j++)
+    //     pins.push(cloth.index(0, j));
     pinsFormation.push(pins);
 
     if (!Detector.webgl) Detector.addGetWebGLMessage();
@@ -272,6 +274,7 @@ function Flag( w, h, windStrengthIn, debug ) {
     var clothGeometry, clothTexture;
     var sphere;
     var object;
+    this.object = object;
     var mouse = new THREE.Vector2(-2,-2), prevMouse = new THREE.Vector2(), affectVec = new THREE.Vector2(),
         interacting = false,
         INTERSECTED;
@@ -284,8 +287,11 @@ function Flag( w, h, windStrengthIn, debug ) {
         stillStack.push( 0 );
     }
 
-    init();
-    animate();
+    var img = new Image();
+    img.onload = init;
+    img.src = 'images/logo2.png';
+
+    //init();
 
     function init() {
 
@@ -306,28 +312,37 @@ function Flag( w, h, windStrengthIn, debug ) {
 
         this.camera = camera;
 
-        // lights
-        var light, materials;
-        //scene.add(new THREE.AmbientLight(0x666666));
-        light = new THREE.DirectionalLight(0xdfebff, 1.75);
-        light.position.set(50, 200, 100);
-        light.position.multiplyScalar(1.3);
-        //scene.add(light);
-
         // cloth material
-        var loader = new THREE.TextureLoader();
-        clothTexture = loader.load('images/logo_rect.png');
+        // var loader = new THREE.TextureLoader();
+        // clothTexture = loader.load('images/logo_rect.png');
+        // clothTexture.generateMipmaps = false;
+        // clothTexture.minFilter = THREE.LinearFilter;
+        // clothTexture.magFilter = THREE.LinearFilter;
 
-        clothTexture.generateMipmaps = false;
-        clothTexture.minFilter = THREE.LinearFilter;
-        clothTexture.magFilter = THREE.LinearFilter;
+        // rotate texture
+        var imgWidth = img.width;
+            imgHeight = img.height;
+        var mapCanvas = document.createElement( 'canvas' );
+        mapCanvas.width = imgHeight;
+        mapCanvas.height = imgWidth;
 
-        //clothTexture.wrapS = clothTexture.wrapT = THREE.RepeatWrapping;
-        //clothTexture.anisotropy = 16;
+        var ctx = mapCanvas.getContext( '2d' );
+        ctx.save();
+        ctx.translate( mapCanvas.width / 2, mapCanvas.height / 2 );
+        ctx.rotate( Math.PI / 2 );
+        ctx.drawImage( img, -imgWidth/2, -imgHeight/2 );
+        ctx.restore();
+
+        var texture = new THREE.Texture( mapCanvas );
+        texture.needsUpdate = true;
+
+        texture.generateMipmaps = false;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
 
         //var clothMaterial = new THREE.MeshLambertMaterial({
         var clothMaterial = new THREE.MeshBasicMaterial({
-            map: clothTexture,
+            map: texture,
             side: THREE.DoubleSide
         });
 
@@ -336,17 +351,18 @@ function Flag( w, h, windStrengthIn, debug ) {
         clothGeometry.dynamic = true;
 
         // cloth mesh
-
         object = new THREE.Mesh(clothGeometry, clothMaterial);
-        object.position.set(0, -250, 0);
-        // object.scale.x = 1.1;
-        // object.scale.y = 0.8;
+        object.matrixAutoUpdate = false;
+        //object.matrix.multiply( new THREE.Matrix4().makeRotationZ(-Math.PI/2) );
+        object.matrix.multiply( new THREE.Matrix4().makeTranslation( 0, -230, 0 ) );
+        var scale = 0.65;
+        object.matrix.multiply( new THREE.Matrix4().makeScale( scale, scale, scale ) );
+
         object.scale.x = 1.0;
         object.scale.y = 1.0;
 
-        object.scale.multiplyScalar(0.70);
-        object.castShadow = true;
         scene.add(object);
+        _this.object = object;
 
         // sphere
         var ballGeo = new THREE.SphereGeometry(ballSize, 20, 20);
@@ -421,6 +437,7 @@ function Flag( w, h, windStrengthIn, debug ) {
             gui.add( props, 'ballVisible' ).onChange( function(val){ sphere.visible = val;});
         }
 
+        animate();
     }
 
     function onMouseMove(event) {
