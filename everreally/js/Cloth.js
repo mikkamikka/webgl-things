@@ -287,21 +287,14 @@ function Flag( w, h, windStrengthIn, debug ) {
         stillStack.push( 0 );
     }
 
-    //var img = new Image();
-    //img.onload = init;
-    //img.src = 'images/logo2.png';
+    var img = new Image();
+    img.onload = init;
+    img.src = 'images/logo2.png';
 
-    WebFont.load({
-        custom: {
-            families: ['Alte Haas Grotesk Bold']
-        }
-    });
-
-    init();
+    //init();
 
     function drawText() {
 
-        //document.body.removeChild( document.getElementById("fontfix") );
 
         var canvas = document.createElement( 'canvas' );
         canvas.width = 720;
@@ -354,56 +347,56 @@ function Flag( w, h, windStrengthIn, debug ) {
         // clothTexture.magFilter = THREE.LinearFilter;
 
         // rotate texture
-        // var imgWidth = img.width;
-        //     imgHeight = img.height;
-        // var mapCanvas = document.createElement( 'canvas' );
-        // mapCanvas.width = imgHeight;
-        // mapCanvas.height = imgWidth;
-        //
-        // var ctx = mapCanvas.getContext( '2d' );
-        // ctx.save();
-        // ctx.translate( mapCanvas.width / 2, mapCanvas.height / 2 );
-        // ctx.rotate( Math.PI / 2 );
-        // ctx.drawImage( img, -imgWidth/2, -imgHeight/2 );
-        // ctx.restore();
+        var imgWidth = img.width;
+            imgHeight = img.height;
+        var mapCanvas = document.createElement( 'canvas' );
+        mapCanvas.width = imgHeight;
+        mapCanvas.height = imgWidth;
+
+        var ctx = mapCanvas.getContext( '2d' );
+        ctx.save();
+        ctx.translate( mapCanvas.width / 2, mapCanvas.height / 2 );
+        ctx.rotate( Math.PI / 2 );
+        ctx.drawImage( img, -imgWidth/2, -imgHeight/2 );
+        ctx.restore();
 
 
-        //var texture = new THREE.Texture( mapCanvas );
-        var texture = new THREE.Texture( drawText() );
+        var texture = new THREE.Texture( mapCanvas );
+        //var texture = new THREE.Texture( drawText() );
         texture.needsUpdate = true;
 
         texture.generateMipmaps = false;
         texture.minFilter = THREE.LinearFilter;
         texture.magFilter = THREE.LinearFilter;
 
-        // var clothMaterial = new THREE.MeshBasicMaterial({
-        //     map: texture,
-        //     side: THREE.DoubleSide
-        // });
+        var clothMaterial = new THREE.MeshBasicMaterial({
+            map: texture,
+            side: THREE.DoubleSide
+        });
 
         // cloth geometry
         clothGeometry = new THREE.ParametricGeometry( clothFunction, cloth.w, cloth.h );
         clothGeometry.dynamic = true;
 
-        var uniforms = THREE.UniformsUtils.clone( WarpShader.uniforms );
-
-        var w = 495, h = 720;
-
-        uniforms[ "tDiffuse" ].value = texture;
-        uniforms[ "radius" ].value = 300;
-        uniforms[ "angle" ].value = 1.0;
-        uniforms[ "center" ].value = new THREE.Vector2( w * Math.random(), h * ( Math.random() * 0.5 + 0.4 ) );
-        uniforms[ "texSize" ].value = new THREE.Vector2( w, h );
-        uniforms[ "strength" ].value = 0.75;
-
-        var warp_material = new THREE.ShaderMaterial( {
-            uniforms: uniforms,
-            vertexShader: WarpShader.vertexShader,
-            fragmentShader: WarpShader.fragmentShader
-        } );
+        // var uniforms = THREE.UniformsUtils.clone( WarpShader.uniforms );
+        //
+        // var w = 495, h = 720;
+        //
+        // uniforms[ "tDiffuse" ].value = texture;
+        // uniforms[ "radius" ].value = 300;
+        // uniforms[ "angle" ].value = 1.0;
+        // uniforms[ "center" ].value = new THREE.Vector2( w * Math.random(), h * ( Math.random() * 0.5 + 0.4 ) );
+        // uniforms[ "texSize" ].value = new THREE.Vector2( w, h );
+        // uniforms[ "strength" ].value = 0.75;
+        //
+        // var warp_material = new THREE.ShaderMaterial( {
+        //     uniforms: uniforms,
+        //     vertexShader: WarpShader.vertexShader,
+        //     fragmentShader: WarpShader.fragmentShader
+        // } );
 
         // cloth mesh
-        object = new THREE.Mesh(clothGeometry, warp_material);
+        object = new THREE.Mesh(clothGeometry, clothMaterial);
         object.matrixAutoUpdate = false;
         //object.matrix.multiply( new THREE.Matrix4().makeRotationZ(-Math.PI/2) );
         object.matrix.multiply( new THREE.Matrix4().makeTranslation( 0, -230, 0 ) );
