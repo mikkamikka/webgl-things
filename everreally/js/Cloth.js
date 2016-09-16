@@ -287,11 +287,48 @@ function Flag( w, h, windStrengthIn, debug ) {
         stillStack.push( 0 );
     }
 
-    var img = new Image();
-    img.onload = init;
-    img.src = 'images/logo2.png';
+    //var img = new Image();
+    //img.onload = init;
+    //img.src = 'images/logo2.png';
 
-    //init();
+    WebFont.load({
+        custom: {
+            families: ['Alte Haas Grotesk Bold']
+        }
+    });
+
+    init();
+
+    function drawText() {
+
+        //document.body.removeChild( document.getElementById("fontfix") );
+
+        var canvas = document.createElement( 'canvas' );
+        canvas.width = 720;
+        canvas.height = 495;
+
+        var ctx = canvas.getContext( '2d' );
+
+        ctx.rect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "blue";
+        ctx.fill();
+
+        ctx.fillStyle = "#ffffff";
+        //ctx.strokeStyle = "#F00";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "bottom";
+        ctx.font = "normal 200px Alte Haas Grotesk Bold";
+
+        ctx.save();
+        ctx.translate( canvas.width / 2, canvas.height / 2 );
+        ctx.scale(1, 0.6);
+        ctx.rotate( Math.PI / 2 );
+        ctx.fillText("Ever", -350, 0);
+        ctx.fillText("Really", -350, 200);
+        ctx.restore();
+
+        return canvas;
+    }
 
     function init() {
 
@@ -301,12 +338,9 @@ function Flag( w, h, windStrengthIn, debug ) {
 
         // scene
         scene = new THREE.Scene();
-        scene.fog = new THREE.Fog( 0xcce0ff, 500, 10000 );
 
         // camera
         camera = new THREE.PerspectiveCamera(30, width / height, 1, 10000);
-        camera.position.x = 0;
-        camera.position.y = 0;
         camera.position.z = 600;
         scene.add(camera);
 
@@ -320,38 +354,56 @@ function Flag( w, h, windStrengthIn, debug ) {
         // clothTexture.magFilter = THREE.LinearFilter;
 
         // rotate texture
-        var imgWidth = img.width;
-            imgHeight = img.height;
-        var mapCanvas = document.createElement( 'canvas' );
-        mapCanvas.width = imgHeight;
-        mapCanvas.height = imgWidth;
+        // var imgWidth = img.width;
+        //     imgHeight = img.height;
+        // var mapCanvas = document.createElement( 'canvas' );
+        // mapCanvas.width = imgHeight;
+        // mapCanvas.height = imgWidth;
+        //
+        // var ctx = mapCanvas.getContext( '2d' );
+        // ctx.save();
+        // ctx.translate( mapCanvas.width / 2, mapCanvas.height / 2 );
+        // ctx.rotate( Math.PI / 2 );
+        // ctx.drawImage( img, -imgWidth/2, -imgHeight/2 );
+        // ctx.restore();
 
-        var ctx = mapCanvas.getContext( '2d' );
-        ctx.save();
-        ctx.translate( mapCanvas.width / 2, mapCanvas.height / 2 );
-        ctx.rotate( Math.PI / 2 );
-        ctx.drawImage( img, -imgWidth/2, -imgHeight/2 );
-        ctx.restore();
 
-        var texture = new THREE.Texture( mapCanvas );
+        //var texture = new THREE.Texture( mapCanvas );
+        var texture = new THREE.Texture( drawText() );
         texture.needsUpdate = true;
 
         texture.generateMipmaps = false;
         texture.minFilter = THREE.LinearFilter;
         texture.magFilter = THREE.LinearFilter;
 
-        //var clothMaterial = new THREE.MeshLambertMaterial({
-        var clothMaterial = new THREE.MeshBasicMaterial({
-            map: texture,
-            side: THREE.DoubleSide
-        });
+        // var clothMaterial = new THREE.MeshBasicMaterial({
+        //     map: texture,
+        //     side: THREE.DoubleSide
+        // });
 
         // cloth geometry
         clothGeometry = new THREE.ParametricGeometry( clothFunction, cloth.w, cloth.h );
         clothGeometry.dynamic = true;
 
+        var uniforms = THREE.UniformsUtils.clone( WarpShader.uniforms );
+
+        var w = 495, h = 720;
+
+        uniforms[ "tDiffuse" ].value = texture;
+        uniforms[ "radius" ].value = 300;
+        uniforms[ "angle" ].value = 1.0;
+        uniforms[ "center" ].value = new THREE.Vector2( w * Math.random(), h * ( Math.random() * 0.5 + 0.4 ) );
+        uniforms[ "texSize" ].value = new THREE.Vector2( w, h );
+        uniforms[ "strength" ].value = 0.75;
+
+        var warp_material = new THREE.ShaderMaterial( {
+            uniforms: uniforms,
+            vertexShader: WarpShader.vertexShader,
+            fragmentShader: WarpShader.fragmentShader
+        } );
+
         // cloth mesh
-        object = new THREE.Mesh(clothGeometry, clothMaterial);
+        object = new THREE.Mesh(clothGeometry, warp_material);
         object.matrixAutoUpdate = false;
         //object.matrix.multiply( new THREE.Matrix4().makeRotationZ(-Math.PI/2) );
         object.matrix.multiply( new THREE.Matrix4().makeTranslation( 0, -230, 0 ) );
