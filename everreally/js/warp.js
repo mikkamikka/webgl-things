@@ -6,15 +6,11 @@ var container;
 var camera, scene, renderer;
 var object;
 
+var loader = new THREE.TextureLoader();
+var texture = loader.load( 'images/unwarped_transparent.png', init );
+//var texture = loader.load( 'images/logo2.png', init );
+//init();
 
-WebFont.load({
-    custom: {
-        families: ['Alte Haas Grotesk Bold']
-    }
-});
-
-init();
-render();
 
 function drawText() {
 
@@ -24,9 +20,9 @@ function drawText() {
 
     var ctx = canvas.getContext( '2d' );
 
-    ctx.rect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "#334CFF";
-    ctx.fill();
+    //ctx.rect(0, 0, canvas.width, canvas.height);
+    //ctx.fillStyle = "#334CFF";
+    //ctx.fill();
 
     ctx.fillStyle = "#ffffff";
     ctx.textAlign = "left";
@@ -42,6 +38,15 @@ function drawText() {
     return canvas;
 }
 
+function drawTextAsImage() {
+    var canvas = document.createElement( 'canvas' );
+    canvas.width = 720;
+    canvas.height = 495;
+    var ctx = canvas.getContext( '2d' );
+    ctx.drawImage( img, 0, 0 );
+    return canvas;
+}
+
 function init() {
 
     container = document.getElementById('logo');
@@ -52,16 +57,16 @@ function init() {
     scene = new THREE.Scene();
 
     // camera
-    camera = new THREE.PerspectiveCamera(30, width / height, 1, 10000);
+    camera = new THREE.PerspectiveCamera( 30, width / height, 1, 10000 );
     camera.position.z = 1;
-    scene.add(camera);
-
-    var texture = new THREE.Texture( drawText() );
-    texture.needsUpdate = true;
+    scene.add( camera );
 
     texture.generateMipmaps = false;
     texture.minFilter = THREE.LinearFilter;
     texture.magFilter = THREE.LinearFilter;
+
+    //var texture = new THREE.Texture( drawTextAsImage() );
+    //texture.needsUpdate = true;
 
     var geometry = new THREE.PlaneBufferGeometry( 2, 2 );
 
@@ -90,10 +95,12 @@ function init() {
     scene.add( object );
 
     // renderer
-    renderer = new THREE.WebGLRenderer({antialias: true, alpha: true});
-    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer = new THREE.WebGLRenderer( {antialias: true, alpha: true} );
+    renderer.setPixelRatio( window.devicePixelRatio );
     renderer.setSize( width, height );
-    container.appendChild(renderer.domElement);
+    container.appendChild( renderer.domElement );
+
+    render();
 }
 
 function render() {

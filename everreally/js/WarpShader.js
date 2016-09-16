@@ -66,13 +66,10 @@ var WarpShader = {
 
             "}",
 
-
-
-
-
             "coord += center;",
 
             "gl_FragColor = texture2D(tDiffuse, coord / texSize);",
+            "if ( gl_FragColor.a < 0.5 ) discard;",
 
         "}"
 
