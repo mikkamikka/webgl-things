@@ -25,13 +25,11 @@ function drawText() {
     var ctx = canvas.getContext( '2d' );
 
     ctx.rect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "blue";
+    ctx.fillStyle = "#334CFF";
     ctx.fill();
 
     ctx.fillStyle = "#ffffff";
-    //ctx.strokeStyle = "#F00";
     ctx.textAlign = "left";
-
     ctx.font = "normal 160px Alte Haas Grotesk Bold";
 
     ctx.save();
