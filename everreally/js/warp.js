@@ -73,10 +73,13 @@ function init() {
 
     uniforms[ "tDiffuse" ].value = texture;
     uniforms[ "radius" ].value = 300;
-    uniforms[ "angle" ].value = 1.0;
-    uniforms[ "center" ].value = new THREE.Vector2( w * Math.random(), h * ( Math.random() * 0.5 + 0.4 ) );
+    uniforms[ "angle" ].value = 4.0 * (0.5 - Math.random());
+    uniforms[ "center" ].value = new THREE.Vector2(
+        w / 2 + w / 4 * (0.5 - Math.random()),
+        h / 2 + h / 4 * (0.5 - Math.random())
+    );
     uniforms[ "texSize" ].value = new THREE.Vector2( w, h );
-    uniforms[ "strength" ].value = 0.75;
+    uniforms[ "strength" ].value = 0.65;
 
     var warp_material = new THREE.ShaderMaterial( {
         uniforms: uniforms,
