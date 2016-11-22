@@ -197,7 +197,7 @@
 
       var container, stats;
 
-      var camera, scene, renderer;
+      var camera, scene, renderer, controls;
       var object, edges, material, material2;
       var video = [], video_texture, textureSphere;
 
@@ -372,7 +372,8 @@
         renderer.setSize( window.innerWidth, window.innerHeight );
         container.appendChild( renderer.domElement );
 
-        var orbit = new THREE.OrbitControls( camera, renderer.domElement );
+        controls = new THREE.OrbitControls( camera, renderer.domElement );
+        controls.maxDistance = 500;
 
         stats = new Stats();
         stats.domElement.style.position = 'absolute';
