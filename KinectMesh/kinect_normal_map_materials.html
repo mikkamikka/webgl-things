@@ -1,0 +1,469 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Kinect mesh test</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <style>
+      body {
+        color: #ffffff;
+        font-family:Monospace;
+        font-size:13px;
+        text-align:center;
+        font-weight: normal;
+
+        background-color: #000000;
+        margin: 0px;
+        overflow: hidden;
+      }
+      #info {
+        position: absolute;
+        bottom: 0px; width: 100%;
+        padding: 5px;
+      }
+      #gui_container {
+        right: 0;
+        position: absolute;
+        top: 0;
+        z-index:100;
+      }
+      #gui {
+        //right: 0;
+        //position: absolute;
+        //top: 0;
+        //z-index:100;
+      }
+      #checkboxes {
+        right: 0;
+        position: absolute;
+        top: 50%;
+        width: 220px;
+        z-index:100;
+      }
+      #video_buttons {
+        position: absolute;
+        top: 50%; transform: translateY(-50%);
+        left: 0px;
+        width: 170px;
+        z-index: 100;
+      }
+      video {
+        width: 100%;
+        display:block;
+        padding: 4px;
+      }
+    </style>
+  </head>
+  <body>
+
+    <div id="info">
+      Kinect depth height map + physical material test <br/>
+      Created by <a href="http://twitter.com/blackmika" target="_blank">@blackmika</a>.
+    </div>
+
+    <div id="container"></div>
+
+
+    <div id="video_buttons">
+      <div style="font-weight: normal">Click to play/pause</div>
+      <div id="buttons">
+        <video autoplay accessKey="0" >
+          <source src="media/zora.ogg" type='video/ogg; codecs="theora, vorbis"'>
+        </video>
+        <!--video accessKey="2">
+          <source src="../image/waves1.ogg" type='video/ogg; codecs="theora, vorbis"'>
+        </video>
+        <video accessKey="3">
+          <source src="../image/waves5.ogg" type='video/ogg; codecs="theora, vorbis"'>
+        </video>
+        <video accessKey="4">
+          <source src="../image/waves6.ogg" type='video/ogg; codecs="theora, vorbis"'>
+        </video-->
+      </div>
+    </div>
+
+    <div id="gui_container">
+      <div id="gui"></div>
+    </div>
+
+    <script src="../r82/three.js"></script>
+    <script src="../libs/Detector.js"></script>
+    <script src="../libs/stats.min.js"></script>
+    <script src="../libs/dat.gui.min.js"></script>
+    <script src="../libs/controls/OrbitControls.js"></script>
+    <!--script src="../three.js-master-r82/examples/js/modifiers/BufferSubdivisionModifier.js"></script>
+    <script src="../three.js-master-r82/examples/js/modifiers/SimplifyModifier.js"></script>
+    <script src="../three.js-master-r82/examples/js/modifiers/ExplodeModifier.js"></script-->
+    <!--script src="geometry/PlaneBufferGeometryMika.js"></script-->
+    <script src="geometry/PlaneBufferGeometryRnd.js"></script>
+    <script src="material/materials.js"></script>
+
+
+    <script>
+
+      if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
+
+      var container, stats;
+
+      var camera, scene, renderer, controls;
+      var object, edges, material, material2;
+      var video = [], video_texture, textureSphere;
+      var lights = [];
+
+      var depthWidth = 512, depthHeight = 424;
+
+      var params = {
+        displacementScale: 240,
+        subdivision: 2,
+        vertexXYRandomness: 0.50,
+        vertexZRandomness: 0.50,
+
+        color: new THREE.Color(0x000),
+        roughness: 0.20,
+        metalness: 0.40,
+        opacity: 1.00,
+        lightIntensity: 0.50
+
+
+      }
+
+//      var useSmoothTexture = false;
+//
+//      function setSmoothTexture() {
+//
+//        useSmoothTexture = ! useSmoothTexture;
+//
+//        if ( useSmoothTexture )
+//          material.uniforms[ 'displacementMap' ].value = smoothTexture.texture;
+//        else
+//          material.uniforms[ 'displacementMap' ].value = video_texture;
+//
+//      }
+//
+//      var refractionMode = 1;
+//
+//      function setRefractionMode() {
+//
+//        refractionMode = -1 * refractionMode;
+//        material.uniforms[ 'refractionMode' ].value = refractionMode;
+//
+//      }
+//
+//      var normalMode2 = -1;
+//
+//      function setNormalMode2() {
+//
+//        normalMode2 = -1 * normalMode2;
+//        material.uniforms[ 'normalMode2' ].value = normalMode2;
+//
+//      }
+
+      var sortedGeometry, smooth;
+
+      init();
+      animate();
+
+      var gui = new dat.GUI();
+      //gui.remember(params);
+      //var f0 = gui.addFolder('Params');
+
+      var folderGeometry = gui.addFolder('Geometry');
+      folderGeometry.open();
+
+      folderGeometry.add(params, 'displacementScale').min(1).max(600).step(1).onChange(
+        function(value){
+          materialTest1.uniforms[ 'displacementScale' ].value = value;
+        } );
+      folderGeometry.add(params, 'subdivision').min(1).max(10).step(1).onChange(
+              function(value){
+                setMeshSubdivision( object, value );
+              } );
+      folderGeometry.add(params, 'vertexXYRandomness').min(0.0).max(1.0).step(0.01).onChange(
+              function(value){
+                setVertexRandomness( object );
+              } );
+      folderGeometry.add(params, 'vertexZRandomness').min(0.0).max(1.0).step(0.01).onChange(
+              function(value){
+                setVertexRandomness( object );
+              } );
+
+      var folderMaterial = gui.addFolder('Material');
+      folderMaterial.open();
+
+      folderMaterial.addColor(params, 'color').onChange(
+              function(value){
+                materialTest1.uniforms[ 'diffuse' ].value.r = value.r / 256;
+                materialTest1.uniforms[ 'diffuse' ].value.g = value.g / 256;
+                materialTest1.uniforms[ 'diffuse' ].value.b = value.b / 256;
+              } );
+      folderMaterial.add(params, 'roughness').min(0.0).max(1.0).step(0.01).onChange(
+              function(value){
+                materialTest1.uniforms[ 'roughness' ].value = value;
+              } );
+      folderMaterial.add(params, 'metalness').min(0.0).max(1.0).step(0.01).onChange(
+              function(value){
+                materialTest1.uniforms[ 'metalness' ].value = value;
+              } );
+      folderMaterial.add(params, 'opacity').min(0.0).max(1.0).step(0.01).onChange(
+              function(value){
+                materialTest1.uniforms[ 'opacity' ].value = value;
+              } );
+
+      folderMaterial.add(params, 'lightIntensity').min(0.0).max(1.0).step(0.01).onChange(
+              function(value){
+                for ( var i = 0; i < lights.length; i++ ){
+                  lights[ i ].intensity = value;
+                }
+              } );
+
+     // gui.close();
+
+//      function setSmoothingPass(){
+//
+//        // new render-to-texture scene
+//        textureScene = new THREE.Scene();
+//
+//        // you may need to modify these parameters
+//        var renderTargetParams = {
+//          minFilter:THREE.LinearFilter,
+//          stencilBuffer:false,
+//          depthBuffer:false
+//        };
+//
+//
+//        smoothWidth = depthWidth * 2;
+//        smoothHeight = depthHeight * 2;
+//
+//        // create buffer
+//        smoothTexture = new THREE.WebGLRenderTarget( smoothWidth, smoothHeight, renderTargetParams );
+//
+//        // custom RTT materials
+//        myUniforms = {
+//          colorMap: { type: "t", value: video_texture },
+//          resolution: { type: "v2", value: new THREE.Vector2( smoothWidth, smoothHeight )},
+//          fWidth: { type: "f", value: depthWidth },
+//          fHeight: { type: "f", value: depthHeight }
+//        };
+//        textureMaterial = new THREE.ShaderMaterial({
+//          uniforms: myUniforms,
+//          vertexShader: document.getElementById( 'smooth_vs' ).textContent,
+//          fragmentShader: document.getElementById( 'smooth_fs' ).textContent
+//        });
+//
+//        // Setup render-to-texture scene
+//        textureCamera = new THREE.OrthographicCamera( smoothWidth / - 2,
+//                smoothWidth / 2,
+//                smoothHeight / 2,
+//                smoothHeight / - 2, -10000, 10000 );
+//
+//        textureGeometry = new THREE.PlaneBufferGeometry( smoothWidth, smoothHeight );
+//        textureMesh = new THREE.Mesh( textureGeometry, textureMaterial );
+//        textureMesh.position.z = -100;
+//
+//        textureScene.add( textureMesh );
+//
+//      }
+
+      function setMeshSubdivision( mesh, value ) {
+
+        mesh.geometry = new PlaneBufferGeometryRnd( 512, 424,
+                512/value, 424/value,
+                params.vertexXYRandomness,
+                params.vertexZRandomness
+        );
+
+      }
+
+      function setVertexRandomness( mesh ) {
+
+        mesh.geometry = new PlaneBufferGeometryRnd( 512, 424,
+                512/params.subdivision, 424/params.subdivision,
+                params.vertexXYRandomness,
+                params.vertexZRandomness
+
+        );
+
+      }
+
+      function createThing() {
+
+        var geometry = new PlaneBufferGeometryRnd( 512, 424, 512/params.subdivision, 424/params.subdivision );
+
+        materialTest1.uniforms[ 'diffuse' ].value = params.color;
+        materialTest1.uniforms[ 'displacementMap' ].value = video_texture;
+        materialTest1.uniforms[ 'displacementScale' ].value = 300;
+        materialTest1.uniforms[ 'opacity' ].value = 1;
+        materialTest1.uniforms[ 'envMap' ].value = textureSphere;
+        materialTest1.uniforms[ 'roughness' ].value = params.roughness;
+        materialTest1.uniforms[ 'metalness' ].value = params.metalness;
+
+        materialTest1.uniforms[ 'resolution' ].value = new THREE.Vector2( depthWidth, depthHeight );
+        materialTest1.uniforms[ 'lookupRadius' ].value = 4;
+
+
+        //materialTest1.color = new THREE.Color( 0x2194ce );
+        materialTest1.displacementMap = video_texture;
+        materialTest1.displacementScale = 250;
+        materialTest1.shading = THREE.FlatShading;
+        materialTest1.transparent = true;
+        materialTest1.envMap = textureSphere;
+        //materialTest1.envMapIntensity = 1;
+        //materialTest1.roughness = 0;
+        //materialTest1.metalness = 1;
+        //materialTest1.wireframe = true;
+
+        //materialTest1.needsUpdate = true;
+
+        var mesh = new THREE.Mesh( geometry, materialTest1 );
+
+        return mesh;
+
+      }
+
+      function addLights() {
+
+        var ambientLight = new THREE.AmbientLight( 0x000000 );
+        scene.add( ambientLight );
+
+        lights[0] = new THREE.PointLight( 0xffffff, 0.5, 0 );
+        lights[1] = new THREE.PointLight( 0xffffff, 0.5, 0 );
+        lights[2] = new THREE.PointLight( 0xffffff, 0.5, 0 );
+        //lights[3] = new THREE.DirectionalLight( 0xffffff, 2 );
+
+        lights[0].position.set( -100, 60, 400 );
+        lights[1].position.set( 0, 4, 400 );
+        lights[2].position.set( 100, -30, 400 );
+        //lights[3].position.set( -100, 0, -500 ).normalize();
+
+        scene.add( lights[0] );
+        scene.add( lights[1] );
+        scene.add( lights[2] );
+        //scene.add( lights[3] );
+
+      }
+
+      function init() {
+
+        container = document.getElementById( 'container' );
+
+        camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 10000 );
+        camera.position.z = 800;
+
+        scene = new THREE.Scene();
+
+        addLights();
+
+        var btns = document.getElementById('buttons').children;
+
+        for (var i=0; i < btns.length; i++){
+
+            video[i] = btns[i];
+            video[i].playbackRate = 1.0;
+
+            video[i].addEventListener("ended", function(args) {
+
+              var ix = args.target.accessKey;
+              //video[ix].currentTime = 0;
+              //video[ix].play();
+              video[ix].load();
+
+            });
+
+          video[i].addEventListener("click", function(args) {
+
+            var other_btns = args.target.parentElement.children;
+            var ix = args.target.accessKey;
+            for (var i=0; i < other_btns.length; i++){
+              if (i != ix) video[i].pause();
+            }
+            video[ix].paused ? video[ix].play() : video[ix].pause();
+
+            //video_texture = new THREE.VideoTexture( video[ix] );
+            //video_texture.minFilter = THREE.LinearFilter;
+            //video_texture.magFilter = THREE.LinearFilter;
+            //video_texture.format = THREE.RGBFormat;
+
+            //material.uniforms[ 'displacementMap' ].value = smoothTexture.texture;
+            //material2.displacementMap = video_texture;
+
+          });
+
+        }
+
+        video_texture = new THREE.VideoTexture( video[0] );
+        video_texture.minFilter = THREE.LinearFilter;
+        video_texture.magFilter = THREE.LinearFilter;
+        video_texture.format = THREE.RGBFormat;
+        //video[1].play();
+
+        textureSphere = THREE.ImageUtils.loadTexture( "../image/pai_pano_sm.jpg" );
+        textureSphere.mapping = THREE.SphericalReflectionMapping;
+        //textureSphere.mapping = THREE.EquirectangularRefractionMapping;
+
+        var sphere = new THREE.Mesh( new THREE.SphereGeometry( 1000, 60, 60 ),
+                new THREE.MeshBasicMaterial( { map: textureSphere } ) );
+        sphere.scale.x = -1;
+        sphere.doubleSided = true;
+        //scene.add( sphere );
+
+
+        object = createThing();
+
+        scene.add( object );
+
+        renderer = new THREE.WebGLRenderer({
+            antialias: true
+        });
+
+        renderer.setClearColor( 0x000000 );
+        renderer.setPixelRatio( window.devicePixelRatio );
+        renderer.setSize( window.innerWidth, window.innerHeight );
+        container.appendChild( renderer.domElement );
+
+        controls = new THREE.OrbitControls( camera, renderer.domElement );
+        controls.maxDistance = 1300;
+
+        stats = new Stats();
+        stats.domElement.style.position = 'absolute';
+        stats.domElement.style.top = '0px';
+        container.appendChild( stats.domElement );
+
+        window.addEventListener( 'resize', onWindowResize, false );
+
+      }
+
+      function onWindowResize( event ) {
+
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+
+        renderer.setSize( window.innerWidth, window.innerHeight );
+
+      }
+
+      function animate() {
+
+        requestAnimationFrame( animate );
+
+        render();
+        stats.update();
+
+      }
+
+      var start = Date.now();
+
+      function render() {
+
+        var time = performance.now();
+
+        //material.uniforms[ 'time' ].value = time;
+
+        renderer.render( scene, camera );
+
+      }
+
+    </script>
+
+  </body>
+</html>
