@@ -97,6 +97,7 @@ var materialTest1 = new THREE.ShaderMaterial( {
     fragmentShader: [
 
         "#define PHYSICAL",
+        //"#define PHYSICALLY_CORRECT_LIGHTS",
 
         "uniform vec3 diffuse;",
         "uniform vec3 emissive;",
@@ -193,7 +194,10 @@ var materialTest1 = new THREE.ShaderMaterial( {
         ].join( "\n" ),
 
     //wireframe: false,
-    lights: true
+    lights: true,
+    transparent: true,
+    //depthWrite: false,
+    //depthTest: false
 
 } );
 

@@ -53,6 +53,12 @@
         display:block;
         padding: 4px;
       }
+      a {
+        color:#eeeeee;
+      }
+      a:hover {
+        color:#0e44ff;
+      }
     </style>
   </head>
   <body>
@@ -87,6 +93,83 @@
       <div id="gui"></div>
     </div>
 
+    <script id="vertexShader" type="x-shader/x-vertex">
+    uniform vec2 resolution;
+
+    uniform sampler2D displacementMap;
+    uniform float displacementScale;
+    uniform float displacementBias;
+
+    //uniform float normalsRatio;
+    uniform float lookupRadius;
+    uniform float mode;
+    varying float drawMode;
+
+    void main() {
+
+      vec3 transformed = position;
+
+      float mean = ( texture2D( displacementMap, uv ).x + texture2D( displacementMap, uv ).y + texture2D( displacementMap, uv ).z ) / 3.0;
+
+      if ( texture2D( displacementMap, uv ).x == 0.0 ) drawMode = 0.0;
+      else drawMode = 1.0;
+
+      transformed += normal * ( mean * displacementScale + displacementBias );
+
+      float aspect = resolution.x/resolution.y;
+      float dx = lookupRadius / resolution.x;
+      float dy = dx * aspect;
+
+      vec4 dy1 = texture2D( displacementMap, uv + vec2( 0.0, dy ) );
+      vec4 dy2 = texture2D( displacementMap, uv + vec2( 0.0, -dy ) );
+
+      vec4 dx1 = texture2D( displacementMap, uv + vec2( dx, 0.0 ) );
+      vec4 dx2 = texture2D( displacementMap, uv + vec2( -dx, 0.0 ) );
+
+      float difX = 0.0;
+      float difY = 0.0;
+
+      if (mode > 0.5){
+
+        vec4 d5 = texture2D( displacementMap, uv + vec2( dx, dy ) );
+        vec4 d6 = texture2D( displacementMap, uv + vec2( -dx, -dy ) );
+        vec4 d7 = texture2D( displacementMap, uv + vec2( dx, -dy ) );
+        vec4 d8 = texture2D( displacementMap, uv + vec2( -dx, dy ) );
+
+        difX = ( dx1.x - dx2.x + d5.x - d6.x + d7.x - d8.x ) / 3.0;
+        difY = ( dy1.y - dy2.y + d5.y - d6.y + d7.y - d8.y ) / 3.0;
+      }
+      else{
+
+        difX = dx1.x - dx2.x;
+        difY = dy1.y - dy2.y;
+
+      }
+
+      if (dx1.x == 0.0 || dx2.x==0.0 || dy1.x==0.0 || dy2.x==0.0) drawMode = 0.0;
+
+
+      gl_Position = projectionMatrix * modelViewMatrix * vec4( transformed, 1.0 );
+
+    }
+
+    </script>
+
+    <script id="fragmentShader_wireframe" type="x-shader/x-fragment">
+
+    varying float drawMode;
+    uniform float opacity;
+
+    void main() {
+
+      gl_FragColor = vec4( 1.0, 1.0, 1.0, opacity );
+
+      if (drawMode == 0.0) discard;
+
+    }
+
+    </script>
+
     <script src="../r82/three.js"></script>
     <script src="../libs/Detector.js"></script>
     <script src="../libs/stats.min.js"></script>
@@ -107,15 +190,17 @@
       var container, stats;
 
       var camera, scene, renderer, controls;
-      var object, edges, material, material2;
+      var object, material, material2;
       var video = [], video_texture, textureSphere;
       var lights = [];
+      var wireframeMaterial, multiMaterial;
 
       var depthWidth = 512, depthHeight = 424;
 
       var params = {
-        displacementScale: 240,
-        subdivision: 2,
+        lookupRadius: 4.0,
+        displacementScale: 300.0,
+        subdivision: 4,
         vertexXYRandomness: 0.50,
         vertexZRandomness: 0.50,
 
@@ -123,41 +208,15 @@
         roughness: 0.20,
         metalness: 0.40,
         opacity: 1.00,
-        lightIntensity: 0.50
+        lightIntensity: 0.50,
+        refraction: false,
+        refractionRatio: 0.98,
 
+        showWireframe: true,
+        displacementScaleWireframe: 302.0,
+        opacityWireframe: 0.2
 
       }
-
-//      var useSmoothTexture = false;
-//
-//      function setSmoothTexture() {
-//
-//        useSmoothTexture = ! useSmoothTexture;
-//
-//        if ( useSmoothTexture )
-//          material.uniforms[ 'displacementMap' ].value = smoothTexture.texture;
-//        else
-//          material.uniforms[ 'displacementMap' ].value = video_texture;
-//
-//      }
-//
-//      var refractionMode = 1;
-//
-//      function setRefractionMode() {
-//
-//        refractionMode = -1 * refractionMode;
-//        material.uniforms[ 'refractionMode' ].value = refractionMode;
-//
-//      }
-//
-//      var normalMode2 = -1;
-//
-//      function setNormalMode2() {
-//
-//        normalMode2 = -1 * normalMode2;
-//        material.uniforms[ 'normalMode2' ].value = normalMode2;
-//
-//      }
 
       var sortedGeometry, smooth;
 
@@ -165,8 +224,6 @@
       animate();
 
       var gui = new dat.GUI();
-      //gui.remember(params);
-      //var f0 = gui.addFolder('Params');
 
       var folderGeometry = gui.addFolder('Geometry');
       folderGeometry.open();
@@ -210,6 +267,15 @@
                 materialTest1.uniforms[ 'opacity' ].value = value;
               } );
 
+      folderMaterial.add(params, 'refraction').onChange(
+              function(value){
+                toggleRefraction( value );
+              } );
+      folderMaterial.add(params, 'refractionRatio').min(0.0).max(1.0).step(0.01).onChange(
+              function(value){
+                materialTest1.uniforms[ 'refractionRatio' ].value = value;
+              } );
+
       folderMaterial.add(params, 'lightIntensity').min(0.0).max(1.0).step(0.01).onChange(
               function(value){
                 for ( var i = 0; i < lights.length; i++ ){
@@ -217,72 +283,94 @@
                 }
               } );
 
-     // gui.close();
+      var folderMaterialWireframe = gui.addFolder('Wireframe');
+      folderMaterialWireframe.open();
 
-//      function setSmoothingPass(){
-//
-//        // new render-to-texture scene
-//        textureScene = new THREE.Scene();
-//
-//        // you may need to modify these parameters
-//        var renderTargetParams = {
-//          minFilter:THREE.LinearFilter,
-//          stencilBuffer:false,
-//          depthBuffer:false
-//        };
-//
-//
-//        smoothWidth = depthWidth * 2;
-//        smoothHeight = depthHeight * 2;
-//
-//        // create buffer
-//        smoothTexture = new THREE.WebGLRenderTarget( smoothWidth, smoothHeight, renderTargetParams );
-//
-//        // custom RTT materials
-//        myUniforms = {
-//          colorMap: { type: "t", value: video_texture },
-//          resolution: { type: "v2", value: new THREE.Vector2( smoothWidth, smoothHeight )},
-//          fWidth: { type: "f", value: depthWidth },
-//          fHeight: { type: "f", value: depthHeight }
-//        };
-//        textureMaterial = new THREE.ShaderMaterial({
-//          uniforms: myUniforms,
-//          vertexShader: document.getElementById( 'smooth_vs' ).textContent,
-//          fragmentShader: document.getElementById( 'smooth_fs' ).textContent
-//        });
-//
-//        // Setup render-to-texture scene
-//        textureCamera = new THREE.OrthographicCamera( smoothWidth / - 2,
-//                smoothWidth / 2,
-//                smoothHeight / 2,
-//                smoothHeight / - 2, -10000, 10000 );
-//
-//        textureGeometry = new THREE.PlaneBufferGeometry( smoothWidth, smoothHeight );
-//        textureMesh = new THREE.Mesh( textureGeometry, textureMaterial );
-//        textureMesh.position.z = -100;
-//
-//        textureScene.add( textureMesh );
-//
-//      }
+      folderMaterialWireframe.add(params, 'showWireframe').onChange(
+              function(value){
+                toggleWireframe( value );
+              } );
+      folderMaterialWireframe.add(params, 'displacementScaleWireframe').min(1).max(600).step(1).onChange(
+              function(value){
+                wireframeMaterial.uniforms[ 'displacementScale' ].value = value;
+              } );
+      folderMaterialWireframe.add(params, 'opacityWireframe').min(0.0).max(1.0).step(0.01).onChange(
+              function(value){
+                wireframeMaterial.uniforms[ 'opacity' ].value = value;
+              } );
+
+     // gui.close();
 
       function setMeshSubdivision( mesh, value ) {
 
-        mesh.geometry = new PlaneBufferGeometryRnd( 512, 424,
+        var newGeometry = new PlaneBufferGeometryRnd( 512, 424,
                 512/value, 424/value,
                 params.vertexXYRandomness,
                 params.vertexZRandomness
         );
 
+        if ( mesh.type === "Group" ) {
+
+          mesh.children.forEach( function( m ) {
+
+            m.geometry.dispose();
+
+            m.geometry = newGeometry.clone();
+
+          } );
+
+        }
+        else {
+
+          mesh.geometry = newGeometry;
+        }
+
       }
 
       function setVertexRandomness( mesh ) {
 
-        mesh.geometry = new PlaneBufferGeometryRnd( 512, 424,
+        var newGeometry = new PlaneBufferGeometryRnd( 512, 424,
                 512/params.subdivision, 424/params.subdivision,
                 params.vertexXYRandomness,
                 params.vertexZRandomness
 
         );
+
+        if ( mesh.type === "Group" ) {
+
+          mesh.children.forEach( function( m ) {
+
+            m.geometry.dispose();
+
+            m.geometry = newGeometry.clone();
+
+          } );
+
+        }
+        else {
+
+          mesh.geometry = newGeometry;
+        }
+
+      }
+
+      function toggleRefraction( value ) {
+
+        if ( value ) {
+          textureSphere.mapping = THREE.EquirectangularRefractionMapping;
+        }
+        else {
+          textureSphere.mapping = THREE.SphericalReflectionMapping;
+        }
+
+        textureSphere.needsUpdate = true;
+        materialTest1.needsUpdate = true;
+
+      }
+
+      function toggleWireframe( value ) {
+
+        object.children[ 0 ].visible = value;
 
       }
 
@@ -292,11 +380,12 @@
 
         materialTest1.uniforms[ 'diffuse' ].value = params.color;
         materialTest1.uniforms[ 'displacementMap' ].value = video_texture;
-        materialTest1.uniforms[ 'displacementScale' ].value = 300;
+        materialTest1.uniforms[ 'displacementScale' ].value = params.displacementScale;
         materialTest1.uniforms[ 'opacity' ].value = 1;
         materialTest1.uniforms[ 'envMap' ].value = textureSphere;
         materialTest1.uniforms[ 'roughness' ].value = params.roughness;
         materialTest1.uniforms[ 'metalness' ].value = params.metalness;
+        materialTest1.uniforms[ 'refractionRatio' ].value = params.refractionRatio;
 
         materialTest1.uniforms[ 'resolution' ].value = new THREE.Vector2( depthWidth, depthHeight );
         materialTest1.uniforms[ 'lookupRadius' ].value = 4;
@@ -304,18 +393,39 @@
 
         //materialTest1.color = new THREE.Color( 0x2194ce );
         materialTest1.displacementMap = video_texture;
-        materialTest1.displacementScale = 250;
         materialTest1.shading = THREE.FlatShading;
         materialTest1.transparent = true;
         materialTest1.envMap = textureSphere;
-        //materialTest1.envMapIntensity = 1;
-        //materialTest1.roughness = 0;
-        //materialTest1.metalness = 1;
-        //materialTest1.wireframe = true;
+        materialTest1.side = THREE.DoubleSide;
 
         //materialTest1.needsUpdate = true;
 
-        var mesh = new THREE.Mesh( geometry, materialTest1 );
+        wireframeMaterial = new THREE.ShaderMaterial( {
+
+          uniforms: {
+
+            "displacementMap" : { type: "t", value: video_texture },
+            "displacementScale" : { type: "f", value: params.displacementScaleWireframe },
+            "displacementBias" : { type: "f", value: 0 },
+            "resolution" : { type: "v2", value: new THREE.Vector2( depthWidth, depthHeight ) },
+            "lookupRadius" : { type: "f", value: params.lookupRadius },
+            "mode" : { type: "f", value: 0.0 },
+            "opacity" : { type: "f", value: params.opacityWireframe }
+
+          },
+          vertexShader: document.getElementById( 'vertexShader' ).textContent,
+          fragmentShader: document.getElementById( 'fragmentShader_wireframe' ).textContent,
+
+          wireframe: true,
+          transparent: true,
+          //depthWrite: false,
+          //depthTest: false
+
+        } );
+
+        //var mesh = new THREE.Mesh( geometry, materialTest1 );
+
+        var mesh = THREE.SceneUtils.createMultiMaterialObject( geometry, [ wireframeMaterial, materialTest1 ]);
 
         return mesh;
 
@@ -331,9 +441,9 @@
         lights[2] = new THREE.PointLight( 0xffffff, 0.5, 0 );
         //lights[3] = new THREE.DirectionalLight( 0xffffff, 2 );
 
-        lights[0].position.set( -100, 60, 400 );
+        lights[0].position.set( -800, 60, 400 );
         lights[1].position.set( 0, 4, 400 );
-        lights[2].position.set( 100, -30, 400 );
+        lights[2].position.set( 600, -30, 400 );
         //lights[3].position.set( -100, 0, -500 ).normalize();
 
         scene.add( lights[0] );
@@ -383,9 +493,6 @@
             //video_texture.minFilter = THREE.LinearFilter;
             //video_texture.magFilter = THREE.LinearFilter;
             //video_texture.format = THREE.RGBFormat;
-
-            //material.uniforms[ 'displacementMap' ].value = smoothTexture.texture;
-            //material2.displacementMap = video_texture;
 
           });
 
