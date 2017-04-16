@@ -27,6 +27,8 @@ var PoolLayer = function( id, renderer, sx, input_layer, stride, pad ) {
         spaceRight: 20
     }
 
+    this.out_depth = input_layer.out_depth;
+
 
     this.init = function() {
 
@@ -38,7 +40,7 @@ var PoolLayer = function( id, renderer, sx, input_layer, stride, pad ) {
             input_texture_size = input_layer.out_sx;
 
 
-        this.Nfilters = input_layer.Nfilters;
+        this.Nfilters = input_layer.out_depth;
 
 
         this.in_sx = input_texture_size;
@@ -59,7 +61,7 @@ var PoolLayer = function( id, renderer, sx, input_layer, stride, pad ) {
         this.displayFrame.right = this.displayFrame.left + this.out_sx * displayViewRatio
          + this.displayFrame.spaceRight;
 
-        this.out_depth = filterDepth;
+
 
         // Create the texture that will store our result
 
@@ -96,13 +98,11 @@ var PoolLayer = function( id, renderer, sx, input_layer, stride, pad ) {
 
     }
 
-    this.renderToTexture = function() {
+    var renderToTexture = function() {
 
         renderer.render( scene, camera, activationsTexture );
 
     }
-
-    this.renderToScreen = renderToScreen;
 
     function renderToScreen(){
 
@@ -113,6 +113,14 @@ var PoolLayer = function( id, renderer, sx, input_layer, stride, pad ) {
         renderer.render( scene, camera );
 
         renderer.setScissorTest( false );
+
+    }
+
+    this.forward = function() {
+
+        renderToTexture();
+
+        renderTextureToScreen( activationsTexture.texture, scene.viewport );
 
     }
 

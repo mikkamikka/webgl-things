@@ -70,7 +70,7 @@ var FCLayer = function( id, renderer, out_depth, input_layer ) {
 
             input_texture_size = input_layer.out_sx;
 
-            this.Nfilters = input_layer.Nfilters;
+            this.Nfilters = input_layer.out_depth;
 
             console.log("FC input filters: ", this.Nfilters);
 
@@ -92,11 +92,18 @@ var FCLayer = function( id, renderer, out_depth, input_layer ) {
 
         this.out_depth = out_depth;
 
-        this.weightsTexture = genWeights( input_layer.out_sx, input_layer.out_sx, input_layer.Nfilters );
-        //this.weightsTexture = genWeights( 3, 1, out_depth );
+        this.weightsTexture = genWeights( input_layer.out_sx, input_layer.out_sx, filterDepth );
+
+        var filters_viewport = {
+            x: _this.displayFrame.left,
+            y: renderer.getSize().height - input_layer.out_sx * filterDepth * _this.displayFrame.weightsWidth,
+            w: _this.displayFrame.weightsWidth,
+            h: input_layer.out_sx * filterDepth * _this.displayFrame.weightsWidth
+        };
+
+        renderTextureToScreen( this.weightsTexture, filters_viewport );
 
         // Create the texture that will store our result
-
         activationsTexture = new THREE.WebGLRenderTarget( this.out_sx * 6.0, this.out_sx * 6.0 * 128.0
             ,{  //minFilter: THREE.LinearFilter ,
                 //magFilter: THREE.LinearFilter,
@@ -150,9 +157,6 @@ var FCLayer = function( id, renderer, out_depth, input_layer ) {
 
     }
 
-
-    this.renderToScreen = renderToScreen;
-
     function renderToScreen(){
 
         renderer.setScissorTest( true );
@@ -163,11 +167,9 @@ var FCLayer = function( id, renderer, out_depth, input_layer ) {
 
         renderer.setScissorTest( false );
 
-
-        //renderSubsample( activationsTexture.texture );
     }
 
-    this.renderToTexture = function() {
+    var renderToTextureAndSubsample = function() {
 
         renderer.render( scene, camera, activationsTexture );
 
@@ -193,9 +195,9 @@ var FCLayer = function( id, renderer, out_depth, input_layer ) {
 
         }
 
-        renderSumAvg( subsampled.texture );
-
         subs = 1;
+
+        return subsampled;
 
     }
 
@@ -207,10 +209,6 @@ var FCLayer = function( id, renderer, out_depth, input_layer ) {
         var sum_material = new THREE.RawShaderMaterial( {
             uniforms: {
                 in_texture: {value: texture},
-
-                //num_filters: {value: new THREE.Vector2( 1.0, out_depth )},
-                //filter_size: {value: sx},
-                //mode_test: {value: id}
             },
             vertexShader: vertex_shader,
             fragmentShader: fragment_shader_summa
@@ -242,36 +240,17 @@ var FCLayer = function( id, renderer, out_depth, input_layer ) {
         //read the pixel under the mouse from the texture
         renderer.readRenderTargetPixels(sumTexture, 0.0, 0.0, 1, 1, pixelBuffer);
 
-        console.log('readPixel: ', pixelBuffer);
 
-        _this.out_act.push( pixelBuffer );
-
-
-        var sum_scr_mesh = new THREE.Mesh( new THREE.PlaneBufferGeometry(1,1), new THREE.MeshBasicMaterial({
-            map: sumTexture.texture
-        }) );
-        var sum_scr_camera = new THREE.OrthographicCamera(
-            1 / - 2,
-            1 / 2,
-            1 / 2,
-            1 / - 2, 0, 1 );
-        var sum_scr_scene = new THREE.Scene();
-        sum_scr_scene.add( sum_scr_mesh );
-
-        sum_scr_scene.viewport = {
+        var sum_scr_scene_viewport = {
             x: _this.displayFrame.left + _this.displayFrame.weightsWidth + 100,
             y: renderer.getSize().height - 2 * displayViewRatio,
             w: 2 * displayViewRatio,
             h: 2 * displayViewRatio
         };
 
-        renderer.setScissorTest( true );
-        renderer.setViewport( sum_scr_scene.viewport.x, sum_scr_scene.viewport.y, sum_scr_scene.viewport.w, sum_scr_scene.viewport.h );
-        renderer.setScissor( sum_scr_scene.viewport.x, sum_scr_scene.viewport.y, sum_scr_scene.viewport.w, sum_scr_scene.viewport.h );
+        renderTextureToScreen( sumTexture.texture, sum_scr_scene_viewport, false );
 
-        renderer.render( sum_scr_scene, sum_scr_camera );
-
-        renderer.setScissorTest( false );
+        return pixelBuffer;
 
     }
 
@@ -308,7 +287,19 @@ var FCLayer = function( id, renderer, out_depth, input_layer ) {
 
         renderer.render( sub_scene, sub_camera, subTexture );
 
-        renderSubsampleToScreen( subTexture.texture, 12 * subs );
+        //renderSubsampleToScreen( subTexture.texture, 12 * subs );
+
+        subTexture.texture.minFilter = THREE.LinearFilter;
+        subTexture.texture.magFilter = THREE.LinearFilter;
+
+        var subsample_scene_viewport = {
+            x: _this.displayFrame.left + _this.displayFrame.weightsWidth * 2.0 + 12 * subs,
+            y: renderer.getSize().height - _this.out_sy * displayViewRatio,
+            w: _this.out_sx * displayViewRatio,
+            h: _this.out_sy * displayViewRatio
+        };
+
+        renderTextureToScreen( subTexture.texture, subsample_scene_viewport, false );
 
         subs ++;
 
@@ -316,45 +307,23 @@ var FCLayer = function( id, renderer, out_depth, input_layer ) {
 
     }
 
-    function renderSubsampleToScreen( texture, offset ) {
 
-        //activationsTexture.texture.mipmaps[0] = activationsTexture.texture;
+    this.forward = function() {
 
-        //texture.minFilter = THREE.LinearMipMapNearestFilter;
-        texture.minFilter = THREE.LinearFilter;
-        texture.magFilter = THREE.LinearFilter;
+        renderToScreen();
 
+        var subsampled = renderToTextureAndSubsample();
 
-        //texture.needsUpdate = true;
+        var result = renderSumAvg( subsampled.texture );
 
-        var mip_mesh = new THREE.Mesh( new THREE.PlaneBufferGeometry(1,1), new THREE.MeshBasicMaterial({
-            map: texture
-        }) );
-        var mip_camera = new THREE.OrthographicCamera(
-            1 / - 2,
-            1 / 2,
-            1 / 2,
-            1 / - 2, 0, 1 );
-        var mip_scene = new THREE.Scene();
-        mip_scene.add( mip_mesh );
+        console.log('readPixel: ', result);
 
-        mip_scene.viewport = {
-            x: _this.displayFrame.left + _this.displayFrame.weightsWidth * 2.0 + offset,
-            y: renderer.getSize().height - _this.out_sy * displayViewRatio,
-            w: _this.out_sx * displayViewRatio,
-            h: _this.out_sy * displayViewRatio
-        };
+        this.out_act.push( result );
 
-        renderer.setScissorTest( true );
-        renderer.setViewport( mip_scene.viewport.x, mip_scene.viewport.y, mip_scene.viewport.w, mip_scene.viewport.h );
-        renderer.setScissor( mip_scene.viewport.x, mip_scene.viewport.y, mip_scene.viewport.w, mip_scene.viewport.h );
-
-        renderer.render( mip_scene, mip_camera );
-
-        renderer.setScissorTest( false );
 
     }
 
+    // compute filter gradients
     this.backward = function() {
 
         gradientsMesh = makeGradientsMesh( new THREE.Vector2( this.out_sx, this.out_sy ), input_texture );
@@ -377,40 +346,16 @@ var FCLayer = function( id, renderer, out_depth, input_layer ) {
 
         renderer.render( grad_scene, grad_camera, gradientsTexture );
 
+        grad_scene.viewport = {
+            x: _this.displayFrame.left + _this.displayFrame.weightsWidth,
+            y: renderer.getSize().height - _this.in_sx * _this.Nfilters * _this.displayFrame.weightsWidth,
+            w: _this.displayFrame.weightsWidth,
+            h: _this.in_sx * _this.Nfilters * _this.displayFrame.weightsWidth
+        };
+
+        renderTextureToScreen( gradientsTexture.texture, grad_scene.viewport );
+
         this.buildInputLayerGradients();
-
-
-        renderToScreen();
-
-        function renderToScreen(){
-
-            var grad_mesh = new THREE.Mesh( new THREE.PlaneBufferGeometry(1,1), new THREE.MeshBasicMaterial({
-                map: gradientsTexture.texture
-            }) );
-            var grad_camera = new THREE.OrthographicCamera(
-                1 / - 2,
-                1 / 2,
-                1 / 2,
-                1 / - 2, 0, 1 );
-            var grad_scene = new THREE.Scene();
-            grad_scene.add( grad_mesh );
-
-            grad_scene.viewport = {
-                x: _this.displayFrame.left + _this.displayFrame.weightsWidth,
-                y: renderer.getSize().height - _this.in_sx * _this.Nfilters * _this.displayFrame.weightsWidth,
-                w: _this.displayFrame.weightsWidth,
-                h: _this.in_sx * _this.Nfilters * _this.displayFrame.weightsWidth
-            };
-
-            renderer.setScissorTest( true );
-            renderer.setViewport( grad_scene.viewport.x, grad_scene.viewport.y, grad_scene.viewport.w, grad_scene.viewport.h );
-            renderer.setScissor( grad_scene.viewport.x, grad_scene.viewport.y, grad_scene.viewport.w, grad_scene.viewport.h );
-
-            renderer.render( grad_scene, grad_camera );
-
-            renderer.setScissorTest( false );
-
-        }
 
     }
 
@@ -434,11 +379,12 @@ var FCLayer = function( id, renderer, out_depth, input_layer ) {
 
     }
 
+    // update filter weights
     this.updateFilter = function() {
 
         var size = input_layer.out_sx;
         var Nfilters = input_layer.out_sx;
-        var filterDepth = input_layer.Nfilters;
+        var filterDepth = input_layer.out_depth;
 
         var texture = new THREE.WebGLRenderTarget( size, size * Nfilters * filterDepth
             ,{
@@ -455,7 +401,9 @@ var FCLayer = function( id, renderer, out_depth, input_layer ) {
         material = new THREE.RawShaderMaterial( {
             uniforms: {
                 grad_texture: { value: gradientsTexture.texture },
-                w_texture: { value: _this.weightsTexture }
+                w_texture: { value: _this.weightsTexture },
+                learning_rate: { value: learning_rate },
+                l2_decay: { value: l2_decay }
             },
 
             //uniforms: { rand_c: { value: new THREE.Vector2( 0.5, 0.5 ) } },
@@ -480,38 +428,14 @@ var FCLayer = function( id, renderer, out_depth, input_layer ) {
 
         activationsMesh.material.uniforms.w_texture.value = texture.texture;   // For next forward pass
 
-        renderToScreen( texture );
+        weights_scene.viewport = {
+            x: _this.displayFrame.left,
+            y: renderer.getSize().height - Nfilters * filterDepth * _this.displayFrame.weightsWidth,
+            w: _this.displayFrame.weightsWidth,
+            h: Nfilters * filterDepth * _this.displayFrame.weightsWidth
+        };
 
-        function renderToScreen( texture ){
-
-            var noise_mesh = new THREE.Mesh( new THREE.PlaneBufferGeometry(1,1), new THREE.MeshBasicMaterial({
-                map: texture.texture
-            }) );
-            weights_camera = new THREE.OrthographicCamera(
-                1 / - 2,
-                1 / 2,
-                1 / 2,
-                1 / - 2, 0, 1 );
-            weights_scene = new THREE.Scene();
-            weights_scene.add( noise_mesh );
-
-            weights_scene.viewport = {
-                x: _this.displayFrame.left,
-                y: renderer.getSize().height - Nfilters * filterDepth * _this.displayFrame.weightsWidth,
-                w: _this.displayFrame.weightsWidth,
-                h: Nfilters * filterDepth * _this.displayFrame.weightsWidth
-            };
-
-            renderer.setScissorTest( true );
-            renderer.setViewport( weights_scene.viewport.x, weights_scene.viewport.y, weights_scene.viewport.w, weights_scene.viewport.h );
-            renderer.setScissor( weights_scene.viewport.x, weights_scene.viewport.y, weights_scene.viewport.w, weights_scene.viewport.h );
-
-            renderer.render( weights_scene, weights_camera );
-
-            renderer.setScissorTest( false );
-
-        }
-
+        renderTextureToScreen( texture.texture, weights_scene.viewport );
 
     }
 
@@ -557,8 +481,6 @@ var FCLayer = function( id, renderer, out_depth, input_layer ) {
 
         '       vec4 mul =  ( texture2D(in_texture, vUv) - vec4(0.0) ) * ( texture2D(w_texture, vUv) - vec4(0.0) );',
 
-        //'        vec4 adapted = mul * 2.0 + vec4(0.0);',
-
         // ReLU
         //'        vec4 adapted = clamp( mul, 0.0, 10.0 );',
 
@@ -566,16 +488,7 @@ var FCLayer = function( id, renderer, out_depth, input_layer ) {
 
 
         '   }',
-        //'    else{  //backward',
 
-        //'        float w = texture2D( texture, vUv ).x;',
-        //'        float dw = texture2D( back_texture, vUv ).z;',
-
-        //'        float newWeight = w + 0.02 * dw;',
-
-        //'        gl_FragColor = vec4( newWeight, texture2D( texture, vUv ).yz, 1.0 );',
-
-        //'    }',
         '}'
 
     ].join('\n');
@@ -605,18 +518,6 @@ var FCLayer = function( id, renderer, out_depth, input_layer ) {
 
                 '   float lookupDeltaX = j / 3.0;',
 
-                //'   float liftH = floor( vUv.x * num_filters.x );',
-                //'   float liftW = floor( vUv.y * num_filters.y );',
-
-                //'   float stepDeltaX = 1.0 / vFilter_size;',
-                //'   float offsetDeltaX = stepDeltaX / 2.0;',
-                //'   float wDeltaX = ( 1.0 ) * ( j * stepDeltaX ) + offsetDeltaX;',
-
-                //'   float stepDeltaY = 1.0 / vFilter_size / num_filters.y;',
-                //'   float offsetDeltaY = stepDeltaY / 2.0;',
-                //'   float wDeltaY = ( liftW * 3.0 + i ) * stepDeltaY + offsetDeltaY;',  //???
-
-                //'   vec4 w = texture2D( kernel, vec2( wDeltaX, wDeltaY ) );',
                 '   vec4 inp = texture2D( texture, vec2( lookupDeltaX + offsetX, lookupDeltaY + offsetY ) );',
 
                 '   sum += inp;',
@@ -651,11 +552,7 @@ var FCLayer = function( id, renderer, out_depth, input_layer ) {
 
         'precision highp float;',
         'precision highp int;',
-        //'uniform vec2 resolution;',
-        //'uniform vec2 num_filters;',
         'uniform sampler2D input_texture;',
-        //'uniform sampler2D w_texture;',
-        //'uniform sampler2D gradients_texture;',
         'uniform vec3 gradient;',
         'varying vec2 vUv;',
 
@@ -705,6 +602,8 @@ var FCLayer = function( id, renderer, out_depth, input_layer ) {
         'precision highp int;',
         'uniform vec2 resolution;',
         'uniform vec2 num_filters;',
+        'uniform float learning_rate;',
+        'uniform float l2_decay;',
 
         'uniform sampler2D grad_texture;',
         'uniform sampler2D w_texture;',
@@ -715,17 +614,17 @@ var FCLayer = function( id, renderer, out_depth, input_layer ) {
         'void main() {',
 
         '   vec4 filter_dw = texture2D( grad_texture, vUv );',
-        '   vec4 filter = texture2D( w_texture, vUv );',
+        '   vec4 filter_w = texture2D( w_texture, vUv );',
 
-        '   float l2_decay = 0.001;',
-        '   vec4 l2grad = l2_decay * filter;',
+        //'   float l2_decay = 0.001;',
+        '   vec4 l2grad = l2_decay * filter_w;',
         //'   vec4 l1grad = vec4(1.0);',
         //'   if (filter.x < 0.0) l1grad.x = -1.0;',
         //'   if (filter.y < 0.0) l1grad.y = -1.0;',
         //'   if (filter.z < 0.0) l1grad.z = -1.0;',
         '   vec4 gij = l2grad + filter_dw;',
 
-        '   vec4 new_filter = filter + 0.001 * ( filter_dw ) ;',
+        '   vec4 new_filter = filter_w + learning_rate * ( filter_dw ) ;',
 
         '   gl_FragColor = vec4( new_filter.xyz, 1.0 );',
         //'   gl_FragColor = vec4( 1.0, 0.0, 0.0, 1.0 );',
@@ -761,38 +660,6 @@ var FCLayer = function( id, renderer, out_depth, input_layer ) {
         } else {
 
             texture.texture = textures[1];
-
-        }
-
-        renderToScreen(  );
-
-        function renderToScreen(  ){
-
-            var noise_mesh = new THREE.Mesh( new THREE.PlaneBufferGeometry(1,1), new THREE.MeshBasicMaterial({
-                map: texture.texture
-            }) );
-            weights_camera = new THREE.OrthographicCamera(
-                1 / - 2,
-                1 / 2,
-                1 / 2,
-                1 / - 2, 0, 1 );
-            weights_scene = new THREE.Scene();
-            weights_scene.add( noise_mesh );
-
-            weights_scene.viewport = {
-                x: _this.displayFrame.left,
-                y: renderer.getSize().height - Nfilters * filterDepth * _this.displayFrame.weightsWidth,
-                w: _this.displayFrame.weightsWidth,
-                h: Nfilters * filterDepth * _this.displayFrame.weightsWidth
-            };
-
-            renderer.setScissorTest( true );
-            renderer.setViewport( weights_scene.viewport.x, weights_scene.viewport.y, weights_scene.viewport.w, weights_scene.viewport.h );
-            renderer.setScissor( weights_scene.viewport.x, weights_scene.viewport.y, weights_scene.viewport.w, weights_scene.viewport.h );
-
-            renderer.render( weights_scene, weights_camera );
-
-            renderer.setScissorTest( false );
 
         }
 

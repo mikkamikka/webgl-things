@@ -34,6 +34,14 @@ var ConvLayer = function( id, renderer, sx, Nfilters, input_layer, stride, pad, 
         spaceRight: 1
     }
 
+    this.out_depth = Nfilters;
+
+    if (input_layer === undefined) {
+        filterDepth = 1;
+    } else {
+        filterDepth = input_layer.out_depth;
+    }
+
 
     // for the first layer
     this.setInputTexture = function( texture, size ) {
@@ -48,22 +56,17 @@ var ConvLayer = function( id, renderer, sx, Nfilters, input_layer, stride, pad, 
 
         if (input_layer === undefined) {
 
-            filterDepth = 1;
-
             this.displayFrame.left = 0;
             //this.displayFrame.right = input_texture_size * displayViewRatio;
 
             this.in_sx = input_texture_size;
             this.in_sy = input_texture_size;
 
+
         } else {
 
-            filterDepth = input_layer.out_depth;
-
             input_texture = input_layer.activationsTexture.texture;
-
             input_texture_size = input_layer.out_sx;
-
 
             this.in_sx = input_texture_size;
             this.in_sy = input_texture_size;
@@ -87,17 +90,19 @@ var ConvLayer = function( id, renderer, sx, Nfilters, input_layer, stride, pad, 
         this.out_sx = Math.floor((this.in_sx + this.pad * 2 - this.sx) / this.stride + 1);
         this.out_sy = Math.floor((this.in_sy + this.pad * 2 - this.sy) / this.stride + 1);
 
-
-
-        this.out_depth = Nfilters * filterDepth;
-
-        this.Nfilters = Nfilters;
-
         this.weightsTexture = genWeights( sx, Nfilters, filterDepth );
 
-        // Create the texture that will store our result
+        var filters_viewport = {
+            x: this.displayFrame.left,
+            y: renderer.getSize().height - Nfilters * filterDepth * this.displayFrame.weightsWidth,
+            w: this.displayFrame.weightsWidth,
+            h: Nfilters * filterDepth * this.displayFrame.weightsWidth
+        };
 
-        activationsTexture = new THREE.WebGLRenderTarget( this.out_sx, this.out_sy * Nfilters * filterDepth
+        renderTextureToScreen( this.weightsTexture, filters_viewport );
+
+        // Create the texture that will store our result
+        activationsTexture = new THREE.WebGLRenderTarget( this.out_sx, this.out_sy * Nfilters
             ,{
                 minFilter: THREE.NearestFilter,
                 magFilter: THREE.NearestFilter,
@@ -131,37 +136,35 @@ var ConvLayer = function( id, renderer, sx, Nfilters, input_layer, stride, pad, 
 
 
         //makeConvMesh( res, in_texture, w_texture );
-        activationsMesh = makeConvMesh( new THREE.Vector2( this.out_sx, this.out_sy * Nfilters * filterDepth ), input_texture, this.weightsTexture );
-
-
+        activationsMesh = makeConvMesh(
+            new THREE.Vector2( this.out_sx, this.out_sy * Nfilters * filterDepth ),
+            input_texture,
+            this.weightsTexture );
 
         camera = new THREE.OrthographicCamera(
             this.out_sx  / - 2,
             this.out_sx  / 2,
-            this.out_sy * Nfilters * filterDepth / 2,
-            this.out_sy * Nfilters * filterDepth / - 2,
+            this.out_sy * Nfilters / 2,
+            this.out_sy * Nfilters / - 2,
             0, 1 );
         scene = new THREE.Scene();
 
         scene.add( activationsMesh );
 
-
         scene.viewport = {
             x: this.displayFrame.left + this.displayFrame.weightsWidth,
-            y: renderer.getSize().height - this.in_sy * Nfilters * filterDepth * displayViewRatio,
+            y: renderer.getSize().height - this.in_sy * Nfilters * displayViewRatio,
             w: this.in_sx * displayViewRatio,
-            h: this.in_sy * Nfilters * filterDepth * displayViewRatio
+            h: this.in_sy * Nfilters * displayViewRatio
         };
-
-
 
     }
 
 
-    this.renderToTexture = function() {
+    var renderToTexture = function() {
 
         if ( id == 0 ) {
-            activationsMesh.material.uniforms.inputimage_normalizeK.value = 0.0;
+            activationsMesh.material.uniforms.inputimage_normalizeK.value = 0.5;
         } else {
             activationsMesh.material.uniforms.inputimage_normalizeK.value = 0.0;
         }
@@ -170,20 +173,15 @@ var ConvLayer = function( id, renderer, sx, Nfilters, input_layer, stride, pad, 
 
     }
 
-    this.renderToScreen = renderToScreen;
 
-    function renderToScreen(){
+    this.forward = function() {
 
-        renderer.setScissorTest( true );
-        renderer.setViewport( scene.viewport.x, scene.viewport.y, scene.viewport.w, scene.viewport.h );
-        renderer.setScissor( scene.viewport.x, scene.viewport.y, scene.viewport.w, scene.viewport.h );
+        renderToTexture();
 
-        renderer.render( scene, camera );
+        //renderToScreen( scene, camera, scene.viewport );
 
-        renderer.setScissorTest( false );
-
+        renderTextureToScreen( activationsTexture.texture, scene.viewport );
     }
-
 
     this.backward = function() {
 
@@ -203,38 +201,14 @@ var ConvLayer = function( id, renderer, sx, Nfilters, input_layer, stride, pad, 
 
         if ( id > 0 ) this.buildInputLayerGradients();
 
-
-        renderToScreen();
-
-        function renderToScreen(){
-
-            var grad_mesh = new THREE.Mesh( new THREE.PlaneBufferGeometry(1,1), new THREE.MeshBasicMaterial({
-                map: gradientsTexture.texture
-            }) );
-            var grad_camera = new THREE.OrthographicCamera(
-                1 / - 2,
-                1 / 2,
-                1 / 2,
-                1 / - 2, 0, 1 );
-            var grad_scene = new THREE.Scene();
-            grad_scene.add( grad_mesh );
-
-            grad_scene.viewport = {
+        var viewport_grad = {
                 x: _this.displayFrame.left + _this.displayFrame.weightsWidth,
                 y: renderer.getSize().height - _this.in_sx * _this.Nfilters,
                 w: _this.displayFrame.weightsWidth,
                 h: _this.in_sx * _this.Nfilters
             };
 
-            renderer.setScissorTest( true );
-            renderer.setViewport( grad_scene.viewport.x, grad_scene.viewport.y, grad_scene.viewport.w, grad_scene.viewport.h );
-            renderer.setScissor( grad_scene.viewport.x, grad_scene.viewport.y, grad_scene.viewport.w, grad_scene.viewport.h );
-
-            renderer.render( grad_scene, grad_camera );
-
-            renderer.setScissorTest( false );
-
-        }
+        renderTextureToScreen( gradientsTexture.texture, viewport_grad );
 
     }
 
@@ -264,7 +238,7 @@ var ConvLayer = function( id, renderer, sx, Nfilters, input_layer, stride, pad, 
         //var Nfilters = input_layer.out_sx;
         //var filterDepth = input_layer.Nfilters;
 
-        var texture = new THREE.WebGLRenderTarget( sx, sx * Nfilters * filterDepth
+        var updated_filter_weights_texture = new THREE.WebGLRenderTarget( sx, sx * Nfilters * filterDepth
             ,{
                 minFilter: THREE.NearestFilter,
                 magFilter: THREE.NearestFilter,
@@ -279,7 +253,9 @@ var ConvLayer = function( id, renderer, sx, Nfilters, input_layer, stride, pad, 
         material = new THREE.RawShaderMaterial( {
             uniforms: {
                 grad_texture: { value: gradientsTexture.texture },
-                w_texture: { value: _this.weightsTexture }
+                w_texture: { value: _this.weightsTexture },
+                learning_rate: { value: learning_rate },
+                l2_decay: { value: l2_decay }
             },
 
             //uniforms: { rand_c: { value: new THREE.Vector2( 0.5, 0.5 ) } },
@@ -298,44 +274,20 @@ var ConvLayer = function( id, renderer, sx, Nfilters, input_layer, stride, pad, 
 
         weights_scene.add( mesh );
 
-        renderer.render( weights_scene, weights_camera, texture );
+        renderer.render( weights_scene, weights_camera, updated_filter_weights_texture );
 
-        _this.weightsTexture = texture.texture;
+        this.weightsTexture = updated_filter_weights_texture.texture;
 
-        activationsMesh.material.uniforms.w_texture.value = texture.texture;   // For next forward pass
+        activationsMesh.material.uniforms.w_texture.value = updated_filter_weights_texture.texture;   // For next forward pass
 
-        renderToScreen( texture );
+        weights_scene.viewport = {
+            x: _this.displayFrame.left,
+            y: renderer.getSize().height - Nfilters * filterDepth * _this.displayFrame.weightsWidth,
+            w: _this.displayFrame.weightsWidth,
+            h: Nfilters * filterDepth * _this.displayFrame.weightsWidth
+        };
 
-        function renderToScreen( texture ){
-
-            var noise_mesh = new THREE.Mesh( new THREE.PlaneBufferGeometry(1,1), new THREE.MeshBasicMaterial({
-                map: texture.texture
-            }) );
-            weights_camera = new THREE.OrthographicCamera(
-                1 / - 2,
-                1 / 2,
-                1 / 2,
-                1 / - 2, 0, 1 );
-            weights_scene = new THREE.Scene();
-            weights_scene.add( noise_mesh );
-
-            weights_scene.viewport = {
-                x: _this.displayFrame.left,
-                y: renderer.getSize().height - Nfilters * filterDepth * _this.displayFrame.weightsWidth,
-                w: _this.displayFrame.weightsWidth,
-                h: Nfilters * filterDepth * _this.displayFrame.weightsWidth
-            };
-
-            renderer.setScissorTest( true );
-            renderer.setViewport( weights_scene.viewport.x, weights_scene.viewport.y, weights_scene.viewport.w, weights_scene.viewport.h );
-            renderer.setScissor( weights_scene.viewport.x, weights_scene.viewport.y, weights_scene.viewport.w, weights_scene.viewport.h );
-
-            renderer.render( weights_scene, weights_camera );
-
-            renderer.setScissorTest( false );
-
-        }
-
+        renderTextureToScreen( updated_filter_weights_texture.texture, weights_scene.viewport );
 
     }
 
@@ -369,7 +321,7 @@ var ConvLayer = function( id, renderer, sx, Nfilters, input_layer, stride, pad, 
 
         'uniform vec2 resolution;',
         'uniform vec2 num_filters;',
-        'uniform float mode_test;',
+        'uniform float mode;',
 
         //'uniform float filter_size;',
         'uniform float inputimage_normalizeK;',
@@ -379,20 +331,12 @@ var ConvLayer = function( id, renderer, sx, Nfilters, input_layer, stride, pad, 
         'varying vec2 vUv;',
         //'varying float vFilter_size;',
 
-        'vec4 get_pixel(in vec2 coords, in vec2 dvec) {',
-        '   return texture2D(in_texture, coords + dvec);',
-        '}',
-
-        'vec4 Convolve( in vec2 coord, in sampler2D kernel, in sampler2D texture,',
+        'float Convolve( in vec2 coord, in sampler2D kernel, in sampler2D texture,',
         'in float denom) {',
 
-            'vec4 res = vec4(0.0);',
+            'float res = 0.0;',
 
             'float vFilter_size = 3.0;',
-
-            //'float normalizeK = 0.0;',
-
-            //'if (mode_inputimage == 1) normalizeK = 0.5;',
 
             'for (float i=0.0; i < 3.0; i++) {',
 
@@ -415,61 +359,108 @@ var ConvLayer = function( id, renderer, sx, Nfilters, input_layer, stride, pad, 
                 '   float wDeltaY = ( liftW * 3.0 + i ) * stepDeltaY + offsetDeltaY;',  //???
 
                 '   vec4 w = texture2D( kernel, vec2( wDeltaX, wDeltaY ) );',
-                '   vec4 inp = texture2D( texture, coord + vec2( lookupDeltaX, lookupDeltaY ) );',
+                '   vec4 in_act = texture2D( texture, coord + vec2( lookupDeltaX, lookupDeltaY ) );',
 
 
-
-                '   res += ( inp - vec4( inputimage_normalizeK ) ) * ( ( w - vec4( 0.0 ) ) * 1.0 );',
+                //'   res += ( in_act - vec4( inputimage_normalizeK ) ) * ( ( w - vec4( 0.0 ) ) * 1.0 );',
+                '   res += ( in_act.x - inputimage_normalizeK ) * w.x;',
+                '   res += ( in_act.y - inputimage_normalizeK ) * w.y;',
+                '   res += ( in_act.z - inputimage_normalizeK ) * w.z;',
 
                 '}',
             '}',
 
-            //'float nom = (res.x+res.y+res.z)/3.0;',
+            'return res;',
+        '}',
 
-            'float threshold = 0.0;',
-            //'if ( nom < threshold ) res = vec4( vec3(0.0), 1.0); else ',
-            //    'res = vec4(nom, nom, nom, 1.0);',
+        'float ConvolveMul( in vec2 coord, in sampler2D kernel, in sampler2D texture,',
+        'in float denom) {',
 
-            'if ( res.x < threshold ) res.x = 0.0;',
-            'if ( res.y < threshold ) res.y = 0.0;',
-            'if ( res.z < threshold ) res.z = 0.0;',
+            'float res = 0.0;',
 
-            'res = res + vec4(0.0);',
+            'float vFilter_size = 3.0;',
 
-            //'if (mode_test>0.0) return texture2D( texture, coord );',
-            //'else;',
+            'for (float i=0.0; i < 3.0; i++) {',
 
-            //'return clamp( res/denom, 0.0, 1.0 );',
-            'return vec4( res.xyz, 1.0 );',
+            '   float lookupDeltaY = ( i - 1.0 ) / resolution.y / 1.0;',
+
+            '   for (float j=0.0; j < 3.0; j++) {',
+
+            '       float lookupDeltaX = ( j - 1.0 ) / resolution.x;',
+
+            //'   float liftH = floor( vUv.x * num_filters.x );',
+            '       float liftW = floor( vUv.y * num_filters.y );',
+
+            '       float stepDeltaX = 1.0 / vFilter_size;',
+            '       float offsetDeltaX = stepDeltaX / 2.0;',
+            '       float wDeltaX = j * stepDeltaX + offsetDeltaX;',
+
+            '       float stepDeltaY = 1.0 / vFilter_size / num_filters.y;',
+            '       float offsetDeltaY = stepDeltaY / 2.0;',
+            '       float wDeltaY = ( liftW * 3.0 + i ) * stepDeltaY + offsetDeltaY;',  //???
+
+            '       vec4 w = texture2D( kernel, vec2( wDeltaX, wDeltaY ) );',
+            '       vec4 in_act = texture2D( texture, coord + vec2( lookupDeltaX, lookupDeltaY ) );',
+
+            //'       res += ( in_act.x - inputimage_normalizeK ) * w.x;',
+            //'       res += in_act.x * ( i + j - 2.0 ) / 1.0;',  //check
+            '       res += in_act.x * w.x;',
+
+            '   }',
+            '}',
+
+            'return res;',
         '}',
 
         'void main()	{',
 
         // Tiled coords
-        'vec2 phase_tiles_coord = fract( vUv * vec2(1.0, num_filters.y ) );',
-        //'vec2 phase_tiles_coord = fract( vUv * vec2(1.0, 1.0 ) );',
-        //for tiling test
-        //'vec4 outColorTiled = texture2D(in_texture, phase);',
+        '   vec2 phase_tiles_coord = fract( vUv * vec2(1.0, num_filters.y ) );',
 
-        //'    if (mode==0.0){  //forward',
+        '   float convolution = 0.0;',
 
-        // Convolve( in vec2 coord, in sampler2D kernel, in sampler2D in_texture,', 'in float denom)
+        '    if (mode == 0.0) {  // first conv layer',
 
-        '       vec4 convolution = Convolve( phase_tiles_coord, w_texture, in_texture, 1.0 );',
+        //      Convolve( in vec2 coord, in sampler2D kernel, in sampler2D in_texture,', 'in float denom)
+        '       convolution = Convolve( phase_tiles_coord, w_texture, in_texture, 1.0 );',
 
-        '       gl_FragColor = vec4( convolution.x, convolution.y, convolution.z, 1.0 );',
+        '   }',
 
-        //'   }',
-        //'    else{  //backward',
+        '    else {  // not first conv layer',
 
-        //'        float w = texture2D( texture, vUv ).x;',
-        //'        float dw = texture2D( back_texture, vUv ).z;',
+        '       const float depth = ' + filterDepth.toPrecision(4) + ';',
 
-        //'        float newWeight = w + 0.02 * dw;',
+        '       for (float i=0.0; i < depth; i++) {',
 
-        //'        gl_FragColor = vec4( newWeight, texture2D( texture, vUv ).yz, 1.0 );',
+        '           float liftW = floor( vUv.y * depth );',
 
-        //'    }',
+        '           float stepDeltaY = 1.0 / depth;',
+        //'         float offsetDeltaY = stepDeltaY / 2.0;',
+        '           float wDeltaY = ( liftW * depth + i ) * stepDeltaY;',
+
+        '           vec2 phase_tiles_coord2 = fract( vUv * vec2(1.0, num_filters.y ) );',
+        '           vec2 sub_coord = vec2( vUv.x, phase_tiles_coord2.y / depth + i / depth );',
+
+        '           convolution += ConvolveMul( sub_coord, w_texture, in_texture, 1.0 );',
+
+        //'           pix_sum += texture2D( in_texture, sub_coord ).x;',
+        //'           convolution = 0.0;',
+
+        '       };',
+        //'       convolution = pix_sum;',
+
+        '    }',
+
+        //ReLU
+        '       float threshold = 0.0;',
+
+        '       if ( convolution < threshold ) convolution = 0.0;',
+
+        '       convolution /= sqrt(' + filterDepth.toPrecision(4) + ');',
+
+        '       gl_FragColor = vec4( convolution, convolution, convolution, 1.0 );',
+
+
         '}'
 
     ].join('\n');
@@ -532,6 +523,8 @@ var ConvLayer = function( id, renderer, sx, Nfilters, input_layer, stride, pad, 
         'precision highp int;',
         'uniform vec2 resolution;',
         'uniform vec2 num_filters;',
+        'uniform float learning_rate;',
+        'uniform float l2_decay;',
 
         'uniform sampler2D grad_texture;',
         'uniform sampler2D w_texture;',
@@ -542,13 +535,13 @@ var ConvLayer = function( id, renderer, sx, Nfilters, input_layer, stride, pad, 
         'void main() {',
 
         '   vec4 filter_dw = texture2D( grad_texture, vUv );',
-        '   vec4 filter = texture2D( w_texture, vUv );',
+        '   vec4 filter_w = texture2D( w_texture, vUv );',
 
-        '   float l2_decay = 0.001;',
-        '   vec4 l2grad = l2_decay * filter;',
+        //'   float l2_decay = 0.001;',
+        '   vec4 l2grad = l2_decay * filter_w;',
         '   vec4 gij = l2grad + filter_dw;',
 
-        '   vec4 new_filter = filter + 0.001 * ( filter_dw ) ;',
+        '   vec4 new_filter = filter_w + learning_rate * ( filter_dw ) ;',
 
         '   gl_FragColor = vec4( new_filter.xyz, 1.0 );',
         //'   gl_FragColor = vec4( 1.0, 0.0, 0.0, 1.0 );',
@@ -588,38 +581,6 @@ var ConvLayer = function( id, renderer, sx, Nfilters, input_layer, stride, pad, 
 
         }
 
-        renderToScreen(  );
-
-        function renderToScreen(  ){
-
-            var noise_mesh = new THREE.Mesh( new THREE.PlaneBufferGeometry(1,1), new THREE.MeshBasicMaterial({
-                map: texture.texture
-            }) );
-            var noise_camera = new THREE.OrthographicCamera(
-                1 / - 2,
-                1 / 2,
-                1 / 2,
-                1 / - 2, 0, 1 );
-            var noise_scene = new THREE.Scene();
-            noise_scene.add( noise_mesh );
-
-            noise_scene.viewport = {
-                x: _this.displayFrame.left,
-                y: renderer.getSize().height - Nfilters * filterDepth * _this.displayFrame.weightsWidth,
-                w: _this.displayFrame.weightsWidth,
-                h: Nfilters * filterDepth * _this.displayFrame.weightsWidth
-            };
-
-            renderer.setScissorTest( true );
-            renderer.setViewport( noise_scene.viewport.x, noise_scene.viewport.y, noise_scene.viewport.w, noise_scene.viewport.h );
-            renderer.setScissor( noise_scene.viewport.x, noise_scene.viewport.y, noise_scene.viewport.w, noise_scene.viewport.h );
-
-            renderer.render( noise_scene, noise_camera );
-
-            renderer.setScissorTest( false );
-
-        }
-
         return texture.texture;
 
     }
@@ -652,6 +613,7 @@ var ConvLayer = function( id, renderer, sx, Nfilters, input_layer, stride, pad, 
         var material, mesh;
 
         //geometry.addAttribute( 'filter_size', new THREE.BufferAttribute( [sx], 1 ) );
+        var mode = id == 0? 0 : 1;
 
         material = new THREE.RawShaderMaterial( {
             uniforms: {
@@ -662,7 +624,7 @@ var ConvLayer = function( id, renderer, sx, Nfilters, input_layer, stride, pad, 
                 resolution: {value: res},
                 num_filters: {value: new THREE.Vector2( 1.0, Nfilters )},
                 //filter_size: {value: sx},
-                //mode_test: {value: id}
+                mode: {value: mode}
             },
             vertexShader: vertex_shader,
             fragmentShader: fragment_shader

@@ -9,7 +9,7 @@ var RegressionLayer = function( id, renderer, input_layer ) {
     this.in_sx = undefined;
     this.in_sy = undefined;
 
-    this.maxAct = { x:1.0, y:1.0, z:1.0 };
+    this.maxAct = { x:0.5, y:1.0, z:1.0 };
 
     this.es = [];
 
