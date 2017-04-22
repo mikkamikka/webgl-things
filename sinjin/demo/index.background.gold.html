@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Mika</title>
+
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+
+	<link rel="stylesheet" href="../shared/css/ffplayer.css" />
+
+    <style>
+      body {
+        color: #ffffff;
+        font-family:Monospace;
+        font-size:13px;
+       /* text-align:center;*/
+        font-weight: normal;
+
+        background-color: #000000;
+        margin: 0px;
+        overflow: hidden;
+      }
+
+      #info {
+        position: absolute;
+        bottom: 0px; width: 100%;
+        padding: 5px;
+      }
+
+      #gui {
+        right: 0;
+        position: absolute;
+        top: 0;
+        z-index:100;
+      }
+
+      #video_buttons {
+        position: absolute;
+        top: 80%;
+        transform: translateY(-50%);
+        left: 0px;
+        width: 170px;
+        z-index: 100;
+        opacity:0.2;
+      }
+
+      video {
+        width: 50%;
+        display:block;
+        /*position: absolute;*/
+        padding: 4px;
+        /*top:0px;*/
+       /* bottom: 0px; */
+      }
+
+    #stats { position: absolute; top: 5px; left: 5px; display: none }
+    #stats #fps { background: transparent !important }
+    #stats #ms { background: transparent !important }
+    #stats #fps #fpsText { color: #898989 !important }
+    #stats #fps #msText { color: #191919 !important }
+    #stats #fps #fpsGraph { display: none }
+    #stats #ms #msGraph { display: none }
+
+    #timeline{ background: #444; }
+    </style>
+</head>
+
+<body>
+    <div id="container"></div>
+
+	<div id="video_buttons">
+
+    <div id="buttons">
+
+        <video autoplay loop accessKey="0">
+           <source src="media/1.ogg" type='video/ogg; codecs="theora, vorbis"'>
+        </video>
+
+        <video loop accessKey="1">
+          <source src="media/2.ogg" type='video/ogg; codecs="theora, vorbis"'>
+        </video>
+
+    </div>
+</div>
+
+<!-- <iframe style="position:absolute; bottom: 0px; left: 0px; z-index: 100;" width="100%" height="60" scrolling="no" frameborder="0" src="ffplayer-mika"></iframe> -->
+<!-- <iframe style="position:absolute; bottom: 0px; left: 0px; z-index: 100;" width="100%" height="60" scrolling="no" frameborder="0" src="ffplayer-pointclouds"></iframe> -->
+
+
+    <div id="gui"></div>
+
+	<script src="../shared/js/three.min.js"></script>
+	<script src="../shared/js/FastPlaneBufferGeometry.js"></script>
+	<!--
+    <script src="js/three.js"></script>
+	-->
+
+	<script src="../shared/js/jquery.min.js"></script>
+	<script src="../shared/js/ffplayer5.js"></script>
+	<script src="../shared/js/stats.min.js"></script>
+	<script src="../shared/js/dat.gui.min.js"></script>
+
+	<script src="../shared/js/EffectComposer.js"></script>
+	<script src="../shared/js/RenderPass.js"></script>
+	<script src="../shared/js/ShaderPass.js"></script>
+	<script src="../shared/js/CopyShader.js"></script>
+	<script src="../shared/js/FXAAShader.js"></script>
+
+	<script src="../shared/js/LuminosityHighPassShader2.js"></script>
+	<script src="../shared/js/UnrealBloomPass2.js"></script>
+
+    <script src="../shared/js/EquirectangularDomeShader3.js"></script>
+
+    <script src="js/Detector.js"></script>
+
+    <script id="vertexShader" type="x-shader/x-vertex">
+
+    varying vec2 vUv;
+    varying vec3 vNormal;
+    varying vec3 vReflect;
+	varying vec3 vWorldPos;
+
+    varying float ao;
+    uniform float time;
+    //uniform float weight;
+    uniform vec2 resolution;
+
+    uniform sampler2D displacementMap;
+    uniform float displacementScale;
+    uniform float fattening;
+    uniform float displacementBias;
+
+    uniform float normalsRatio;
+    uniform float lookupRadius;
+    uniform float mode;
+    uniform float checkAmount;
+    uniform float checkFreq;
+    varying float drawMode;
+
+
+    void main() {
+
+		vec3 transformedNormal = normalMatrix * normal;
+		vNormal = normalize( transformedNormal );
+		vUv = uv;
+
+		float aspect = resolution.x/resolution.y;
+		float dx = lookupRadius / resolution.x;
+		float dy = dx * aspect;
+
+		vec4 dy1 = texture2D( displacementMap, uv + vec2( 0.0, dy ) );
+		vec4 dy2 = texture2D( displacementMap, uv + vec2( 0.0, -dy ) );
+
+		vec4 dx1 = texture2D( displacementMap, uv + vec2( dx, 0.0 ) );
+		vec4 dx2 = texture2D( displacementMap, uv + vec2( -dx, 0.0 ) );
+
+		float difX = 0.0;
+		float difY = 0.0;
+
+		if (mode > 0.5){
+
+			vec4 d5 = texture2D( displacementMap, uv + vec2( dx, dy ) );
+			vec4 d6 = texture2D( displacementMap, uv + vec2( -dx, -dy ) );
+			vec4 d7 = texture2D( displacementMap, uv + vec2( dx, -dy ) );
+			vec4 d8 = texture2D( displacementMap, uv + vec2( -dx, dy ) );
+
+			difX = ( dx1.x - dx2.x + d5.x - d6.x + d7.x - d8.x ) / 3.0;
+			difY = ( dy1.y - dy2.y + d5.y - d6.y + d7.y - d8.y ) / 3.0;
+
+		} else {
+
+			difX = dx1.x - dx2.x;
+			difY = dy1.y - dy2.y;
+
+		}
+
+		//cut off background plane
+
+		if ( texture2D( displacementMap, uv ).x < 0.01 ) drawMode = 0.0;
+		else drawMode = 1.0;
+
+		//additional cut off
+		if (dx1.x == 0.0 || dx2.x==0.0 || dy1.x==0.0 || dy2.x==0.0) drawMode = 0.0;
+
+		//float mean = texture2D( displacementMap, uv ).x;
+		float smooth_mean = ( texture2D( displacementMap, uv ).x + dx1.x + dx2.x + dy1.x + dy2.x ) / 5.0;
+
+		vec3 modifiedNormal = normalize( normal - normalsRatio * vec3( difX, difY, 0.0 ) );
+
+		//Checkers
+		float myDisplace;
+		myDisplace = displacementScale;
+		float myU = uv.x*checkFreq;
+		float myV = uv.y*checkFreq;
+		// int myIU = int(myU);
+		// int myIV = int(myV);
+		myU = mod(myU,2.0);
+		myV = mod(myV,2.0);
+		int myIU = int(myU);
+		int myIV = int(myV);
+	   // int myIU = Math.round(myU);
+		// myV = Math.round(myV);
+
+		if (myIU != myIV && checkAmount != 0.0) myDisplace *= -1.0;
+
+
+
+		//myDisplace += fattening;
+
+		vec3 blendNormal = normal* (1.0 - fattening)  + modifiedNormal * fattening;
+		//blendNormal = blendNormal + modifiedNormal * myDisplace;
+
+		// blendNormal.y *= 10.0;
+		// blendNormal.x *= 10.0;
+
+		vec3 transformedPos = position + blendNormal * ( smooth_mean * myDisplace + displacementBias );
+		vWorldPos = transformedPos;
+
+		vec3 worldNormal = normalize( -1.0 * mat3( modelMatrix[0].xyz, modelMatrix[1].xyz, modelMatrix[2].xyz ) * modifiedNormal );
+
+		vec3 cameraToVertex = normalize( transformedPos - cameraPosition );
+
+		vReflect = reflect( cameraToVertex, worldNormal );
+
+		vec4 mvPosition = modelViewMatrix * vec4( transformedPos, 1.0 );
+
+		gl_Position = projectionMatrix * mvPosition;
+
+    }
+
+    </script>
+
+    <script id="fragmentShader" type="x-shader/x-fragment">
+
+    varying vec2 vUv;
+    varying vec3 vNormal;
+    varying vec3 vReflect;
+	varying vec3 vWorldPos;
+
+    varying float ao;
+    varying float drawMode;
+
+    uniform sampler2D envMap;
+	uniform sampler2D displacementMap;
+
+    uniform float time;
+
+	uniform float panoramaAngleOffset;
+
+    #define PI 3.1415926535897932
+	#define PI2 6.283185307179586476925286766559
+
+    void main() {
+
+		// yaw/pitch mapping by @thespite (from https://www.clicktorelease.com/code/perlin/chrome.html)
+
+		float yaw = 0.5 - atan( vReflect.z, - vReflect.x ) / ( 2.0 * PI );
+		float pitch = 0.5 + asin( vReflect.y ) / PI;
+		vec2 pos = vec2( yaw + panoramaAngleOffset/PI2, pitch );
+		vec3 color = texture2D( envMap, pos ).xyz;
+
+		//vec4 dy = texture2D( displacementMap, vUv );
+		//float alpha = smoothstep( 0.0, 0.25, dy.r );
+
+		float alpha = smoothstep( 0.0, 150.0, vWorldPos.z );
+		//alpha = 1.0;
+
+		gl_FragColor = vec4( color, alpha );
+
+		if (drawMode == 0.0) discard;
+
+    }
+
+    </script>
+
+    <script>
+		if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
+
+		var container, stats;
+
+		var camera, scene, renderer, controls;
+		var effectFXAA, bloomPass, renderScene;
+		var object, edges, material, material2;
+
+		var mouse, center;
+		var time = 0;
+
+		var PLAYER_HEIGHT = 62;
+
+		var winWidth = window.innerWidth;
+		var winHeight = window.innerHeight - PLAYER_HEIGHT;
+
+		var windowHalfX = window.innerWidth / 2;
+		var windowHalfY = window.innerHeight / 2;
+
+        var mouseX = 0;
+        var mouseY = 0;
+
+        var targetX = 0.0;
+        var targetY = 0.0;
+        var angle = 0.0;
+        var height = 0.0;
+        var target = new THREE.Vector3( 0, 0, 0 );
+
+		var clock = new THREE.Clock();
+
+		var video = [], video_texture, textureSphere, textureSphere2;
+
+		var geometry;
+		var material;
+
+		var geoOffset = {
+
+			zOffset: 0,
+			zFrequency: 20
+
+		};
+
+
+		var params = {
+
+			sparkles: true,
+			displacementScale: 380,
+			fattening: 0.0,
+			normalsRatio: 21.5,
+			lookupRadius: 3.5,
+			mode: 1,
+			weight: 1.0,
+
+			backgroundVisible: true,
+
+			pause: false,
+			bloomStrength: 3,
+			bloomThreshold: 0.50,
+			bloomRadius: 1,
+			zOffset: 0,
+			zFrequency: 20.0,
+
+			fov: 12,
+
+			panoramaAngleOffset : 0.0,
+			panoramaBrightness	: 0.5,
+
+			checkAmount: 0,
+			checkFreq: 20
+			// zOffset; 50,
+			// zFrequency; 200
+
+		};
+
+		var sparkleObject1, sparkleObject2;
+		var sparkleMaterial;
+
+		init();
+		addGUI();
+
+		animate();
+
+		function addGUI() {
+
+			gui = new dat.GUI();
+
+			gui.add(params, 'pause').name('camera lock');
+			gui.add(params, 'sparkles').name('sparkles');
+
+			gui.add(params, 'backgroundVisible').name('background');
+
+			gui.add(params, 'panoramaAngleOffset').min(0).max(6.28).step(0.05).name('panoramaAngleOffset').onChange( function(value) {
+
+				setPanoramaAngleOffset( value );
+
+			}).listen();
+
+			gui.add(params, 'panoramaBrightness').min(0).max(1).step(0.05).name('panoramaBrightness').onChange( function(value) {
+
+				sphereMaterial.uniforms["brightness"].value = Number(value);
+
+			});
+
+			gui.add(params, 'fattening').min(-0.1).max(0.5).step(0.05).name('extrude').onChange( function(value){
+
+				material.uniforms[ 'fattening' ].value = -value;
+
+			} );
+
+			gui.add( params, 'bloomThreshold', 0.0, 1.0 ).name('bloomThreshold').onChange( function(value) {
+
+				bloomPass.threshold = Number(value);
+
+			});
+
+			gui.add(params, 'fov').min(1).max(100).step(1).name('camera fov').onChange( function(value) {
+
+				camera.fov = Number(value);
+				camera.updateProjectionMatrix();
+
+			});
+
+			gui.add( params, 'zOffset', 0.0, 100.0, 0.1 ).name('spike');
+
+			gui.add( params, 'zFrequency').min(10).max(900).step(1).name('spike freq');
+			gui.add(params, 'checkAmount').min(0).max(200).step(1).onChange(
+			function(value){
+				material.uniforms[ 'checkAmount' ].value = value;
+			} );
+
+			gui.add(params, 'checkFreq').min(0).max(200).step(1).onChange(
+			function(value){
+				material.uniforms[ 'checkFreq' ].value = value;
+			} );
+
+			//BLOOM PARAMS
+			//  gui.add( params, 'bloomStrength', 0.0, 3.0, 0.1 ).onChange( function(value) {
+			//     bloomPass.strength = Number(value);
+			// });
+			// gui.add( params, 'bloomRadius', 0.0, 1.0, 0.1 ).onChange( function(value) {
+			//  bloomPass.radius = Number(value);
+			// });
+
+			var f1 = gui.addFolder('Shader Stuff');
+
+			f1.add(params, 'displacementScale').min(1).max(800).step(1).onChange(
+			function(value){
+			material.uniforms[ 'displacementScale' ].value = value;
+			} );
+			f1.add(params, 'normalsRatio').min(1).max(30).step(0.1).onChange(
+			function(value){
+			material.uniforms[ 'normalsRatio' ].value = value;
+			} );
+			f1.add(params, 'lookupRadius').min(0.1).max(10).step(0.1).onChange(
+			function(value){
+			material.uniforms[ 'lookupRadius' ].value = value;
+			} );
+			f1.add(params, 'mode').min(0).max(1).step(1).onChange(
+			function(value){
+			material.uniforms[ 'mode' ].value = value;
+			} );
+
+
+
+			// gui.add( params, 'zFrequency').min(199).max(202).step(0.1).onChange( function(value) {
+			//  geoOffset.zFrequency = Number(value);
+			// });
+
+			// gui.add( params, 'zOffset', 0.0, 100.0, 0.1 ).onChange( function(value) {
+			//  geoOffset.zOffset = Number(value);
+			// });
+
+
+			//gui.close();
+			gui.__proto__.constructor.toggleHide();
+
+		}
+
+
+		function createThing( radius ) {
+
+			geometry = new THREE.FastPlaneBufferGeometry( 512, 424, 1024, 848 );
+
+			material = new THREE.ShaderMaterial( {
+
+				uniforms: {
+
+					"displacementMap" 	: { type: "t", value: video_texture },
+					"displacementScale" : { type: "f", value: params.displacementScale },
+					"checkAmount" 		: { type: "f", value: params.checkAmount },
+					"checkFreq" 		: { type: "f", value: params.checkFreq },
+					"fattening" 		: { type: "f", value: params.fattening },
+					"displacementBias" 	: { type: "f", value: 0 },
+
+					"resolution" 	: { type: "v2", value: new THREE.Vector2( 512, 424 ) },
+					"normalsRatio" 	: { type: "f", value: params.normalsRatio },
+					"lookupRadius" 	: { type: "f", value: params.lookupRadius },
+					"mode" 			: { type: "f", value: 0.0 },
+					"refractionRatio" : { type: "f", value: 0.09 },
+					"displacementMap" : { type: "t", value: video_texture },
+					//"weight" : { type: "f", value: 1.0 },
+
+
+					"envMap"	: { type: "t", value: textureSphere },
+					"time"		: { type: "f", value: 0 },
+
+					"panoramaAngleOffset" : { type: "f", value: 0 },
+
+				},
+
+				vertexShader: document.getElementById( 'vertexShader' ).textContent,
+				fragmentShader: document.getElementById( 'fragmentShader' ).textContent,
+
+			} );
+
+			material.transparent = true;
+
+			var mesh = new THREE.Mesh( geometry, material );
+			mesh.position.z = -200;
+			mesh.position.y = 40;
+			mesh.rotation.x = Math.PI * 0.08;
+
+			return mesh;
+
+		}
+
+		function addLights() {
+
+			var ambientLight = new THREE.AmbientLight( 0x666666 );
+			scene.add( ambientLight );
+
+			var lights = [];
+			lights[0] = new THREE.PointLight( 0xffffff, 0.5, 0 );
+			lights[1] = new THREE.PointLight( 0xffffff, 0.5, 0 );
+			lights[2] = new THREE.PointLight( 0xffffff, 0.5, 0 );
+
+			lights[0].position.set( -300, 600, 200 );
+			lights[1].position.set( 100, 600, 100 );
+			lights[2].position.set( -100, -300, 1000 );
+
+			scene.add( lights[0] );
+			scene.add( lights[1] );
+			scene.add( lights[2] );
+
+		}
+
+		function init() {
+
+			container = document.getElementById( 'container' );
+
+			camera = new THREE.PerspectiveCamera( params.fov, winWidth / winHeight, 1, 500000 );
+			camera = new THREE.PerspectiveCamera( params.fov, winWidth / winHeight, 1, 500000 );
+			camera.position.set( 0, 0, 800 );
+
+			scene = new THREE.Scene();
+			center = new THREE.Vector3();
+			center.z = 0;
+
+			addLights();
+
+
+			var btns = document.getElementById('buttons').children;
+
+			for (var i=0; i < btns.length; i++){
+
+				video[i] = btns[i];
+				video[i].playbackRate = 1.0;
+
+				video[i].addEventListener("ended", function(args) {
+
+				  var ix = args.target.accessKey;
+				  //video[ix].currentTime = 0;
+				  //video[ix].play();
+				  video[ix].load();
+
+
+				});
+
+
+				video[i].addEventListener("click", function(args) {
+
+				var other_btns = args.target.parentElement.children;
+				var ix = args.target.accessKey;
+				for (var i=0; i < other_btns.length; i++){
+				  if (i != ix) video[i].pause();
+				}
+				video[ix].paused ? video[ix].play() : video[ix].pause();
+
+				video_texture = new THREE.VideoTexture( video[ix] );
+				video_texture.minFilter = THREE.LinearFilter;
+				video_texture.magFilter = THREE.LinearFilter;
+				video_texture.format = THREE.RGBFormat;
+
+				material.uniforms[ 'displacementMap' ].value = video_texture;
+
+				material2.uniforms[ 'displacementMap' ].value = video_texture;
+				material2.displacementMap = video_texture;
+
+
+			  });
+
+			}
+
+			video_texture = new THREE.VideoTexture( video[0] );
+			video_texture.minFilter = THREE.LinearFilter;
+			video_texture.magFilter = THREE.LinearFilter;
+			video_texture.format = THREE.RGBFormat;
+			//video[1].play();
+
+			var textureLoader = new THREE.TextureLoader;
+
+			textureSphere = textureLoader.load( "img/pano1.jpg" );
+			//textureSphere2 = textureLoader.load( "../water/textures/urban-21-4k.jpg" );
+			//textureSphere2 = textureLoader.load( "../water/textures/urban-21-128.png" );
+			//textureSphere2 = textureSphere;
+			//textureSphere = textureSphere2;
+
+			textureSphere2 = textureLoader.load( "img/pano1-1024.jpg" );
+			//textureSphere2 = textureLoader.load( "img/pano1-128.png");
+			//textureSphere2 = textureLoader.load( "img/pano1-1024.jpg");
+
+			// textureSphere = THREE.ImageUtils.loadTexture( "image/opustest.jpg" );
+			//textureSphere.mapping = THREE.SphericalReflectionMapping;
+			//textureSphere.mapping = THREE.EquirectangularRefractionMapping;
+
+			/*
+			sphereMaterial = new THREE.MeshBasicMaterial( {
+
+				  map: textureSphere2,
+				  transparent: true,
+				  opacity: params.bgOpacity,
+
+			} );
+			*/
+
+			var shader = THREE.EquirectangularDomeShader;
+			var uniforms = THREE.UniformsUtils.clone( shader.uniforms );
+
+			sphereMaterial = new THREE.ShaderMaterial( {
+
+				"uniforms"		: uniforms,
+				"vertexShader"	: shader.vertexShader,
+				"fragmentShader": shader.fragmentShader
+
+			} );
+
+			uniforms[ "tEnvMap" ].value = textureSphere2;
+			uniforms[ "desaturationAmount" ].value = 0.5;
+			uniforms[ "brightness" ].value = 0.5;
+
+
+			var defines = {};
+			defines[ "USE_DITHERING" ] = true;
+			defines[ "USE_DESATURATION" ] = false;
+
+			sphereMaterial.defines = defines;
+
+			sphere = new THREE.Mesh( new THREE.SphereGeometry( 2000, 32, 16 ), sphereMaterial );
+			// _mirrorSphereCamera = new THREE.CubeCamera( 0.1, 5000, 512 );
+			// _mirrorSphereCamera.renderTarget.mapping = THREE.CubeRefractionMapping;
+			// _mirrorSphereCamera.renderTarget.minFilter = THREE.LinearMipMapLinearFilter;
+			// scene.add( _mirrorSphereCamera );
+			sphere.scale.x = -1;
+			sphere.doubleSided = true;
+			scene.add( sphere );
+
+			object = createThing(60);
+
+			// object.rotation.y = Math.PI / 2;
+
+			// object.doubleSided = true;
+			scene.add( object );
+
+			addSparkles();
+
+
+			//
+
+			renderer = new THREE.WebGLRenderer( { antialias: true } );
+
+			renderer.setClearColor( 0x000000 );
+			renderer.setPixelRatio( window.devicePixelRatio );
+			renderer.setSize( winWidth, winHeight );
+
+			renderScene = new THREE.RenderPass(scene, camera);
+			effectFXAA = new THREE.ShaderPass(THREE.FXAAShader);
+			effectFXAA.uniforms['resolution'].value.set(1 / window.innerWidth, 1 / window.innerHeight );
+			var copyShader = new THREE.ShaderPass(THREE.CopyShader);
+			copyShader.renderToScreen = true;
+			bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 3, 1, 0.50);//1.0, 9,
+			composer = new THREE.EffectComposer(renderer);
+			composer.setSize(window.innerWidth, window.innerHeight);
+			  composer.addPass(renderScene);
+			composer.addPass(effectFXAA);
+			  composer.addPass(bloomPass);
+			composer.addPass(copyShader);
+			//renderer.toneMapping = THREE.ReinhardToneMapping;
+			renderer.gammaInput = true;
+			renderer.gammaOutput = true;
+
+
+			container.appendChild( renderer.domElement );
+
+			// controls = new THREE.OrbitControls( camera, renderer.domElement );
+			// controls.maxDistance = 1300;
+
+			stats = new Stats();
+			stats.domElement.style.position = 'absolute';
+			stats.domElement.style.top = '0px';
+			container.appendChild( stats.domElement );
+
+			mouse = new THREE.Vector3( 0, 0, 1 );
+			document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+			window.addEventListener( 'resize', onWindowResize, false );
+			window.addEventListener( 'wheel', onDocumentWheel, false );
+			// window.addEventListener("click", function( event ) { console.log(window.event.target);
+			//  ;}, false);
+			var flag = 0;
+			var paused = false;
+
+			/*
+			document.addEventListener("mousedown", function() {
+
+				flag = 1;
+
+			}, false );
+
+			document.addEventListener("mousemove", function(){
+
+				if(flag === 1){
+
+					material.uniforms[ 'fattening' ].value += -mouse.x*0.00001;
+
+				   if (material.uniforms[ 'fattening' ].value < -0.3){
+					  material.uniforms[ 'fattening' ].value = -0.3
+					}
+				  if (material.uniforms[ 'fattening' ].value > 0.0){
+					  material.uniforms[ 'fattening' ].value = 0.0
+					}
+
+				}
+
+			}, false);
+
+			document.addEventListener("mouseup", function(){
+
+				flag = 0;
+
+			}, false );
+
+			*/
+
+
+		}
+
+		// ---------------------------------------------------------------------------------------------------------------
+
+		function setPanoramaAngleOffset( angle ) {
+
+			material.uniforms[ "panoramaAngleOffset" ].value = angle;
+
+			sphere.rotation.y = angle;
+
+		}
+
+		// ---------------------------------------------------------------------------------------------------------------
+
+		function createSparkleMaterialPhong() {
+
+			var material = new THREE.MeshPhongMaterial( {
+
+				"blending"		: THREE.CustomBlending,
+				"blendSrc"		: THREE.OneFactor, // output of shader must be premultiplied
+				"blendDst"		: THREE.OneMinusSrcAlphaFactor,
+				"blendEquation"	: THREE.AddEquation,
+				//"depthWrite"	: false,
+				"color"			: 0x000000,
+				"emissive"		: 0x000000,
+				"specular"		: 0xffffff,
+				"shininess"		: 8200,
+				"transparent"	: true,
+				"opacity"		: 0.0,
+				"side"			: THREE.DoubleSide,
+				"vertexColors"	: THREE.VertexColors
+
+			} );
+
+			return material;
+
+		}
+
+		function createSparkleGeometry( triangles, cubeSize, triangleSize ) {
+
+			var geometry = new THREE.BufferGeometry();
+
+			var positions = new Float32Array( triangles * 3 * 3 );
+			var normals = new Float32Array( triangles * 3 * 3 );
+
+			// triangles spread in the cube
+
+			var n = cubeSize;
+			var n2 = n / 2;
+
+			// individual triangle size
+
+			var d = triangleSize;
+			var d2 = d / 2;
+
+			var pA = new THREE.Vector3();
+			var pB = new THREE.Vector3();
+			var pC = new THREE.Vector3();
+
+			var cb = new THREE.Vector3();
+			var ab = new THREE.Vector3();
+
+			for ( var i = 0, il = positions.length; i < il; i += 9 ) {
+
+				// positions
+
+				var x = Math.random() * n - n2;
+				var y = Math.random() * n - n2;
+				var z = Math.random() * n - n2;
+
+				var ax = x + Math.random() * d - d2;
+				var ay = y + Math.random() * d - d2;
+				var az = z + Math.random() * d - d2;
+
+				var bx = x + Math.random() * d - d2;
+				var by = y + Math.random() * d - d2;
+				var bz = z + Math.random() * d - d2;
+
+				var cx = x + Math.random() * d - d2;
+				var cy = y + Math.random() * d - d2;
+				var cz = z + Math.random() * d - d2;
+
+				positions[ i ] 	   = ax;
+				positions[ i + 1 ] = ay;
+				positions[ i + 2 ] = az;
+
+				positions[ i + 3 ] = bx;
+				positions[ i + 4 ] = by;
+				positions[ i + 5 ] = bz;
+
+				positions[ i + 6 ] = cx;
+				positions[ i + 7 ] = cy;
+				positions[ i + 8 ] = cz;
+
+				// flat face normals
+
+				pA.set( ax, ay, az );
+				pB.set( bx, by, bz );
+				pC.set( cx, cy, cz );
+
+				cb.subVectors( pC, pB );
+				ab.subVectors( pA, pB );
+				cb.cross( ab );
+
+				cb.normalize();
+
+				var nx = cb.x;
+				var ny = cb.y;
+				var nz = cb.z;
+
+				normals[ i ]     = nx;
+				normals[ i + 1 ] = ny;
+				normals[ i + 2 ] = nz;
+
+				normals[ i + 3 ] = nx;
+				normals[ i + 4 ] = ny;
+				normals[ i + 5 ] = nz;
+
+				normals[ i + 6 ] = nx;
+				normals[ i + 7 ] = ny;
+				normals[ i + 8 ] = nz;
+
+			}
+
+			geometry.addAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
+			geometry.addAttribute( 'normal',   new THREE.BufferAttribute( normals, 3 ) );
+
+			geometry.computeBoundingSphere();
+
+			return geometry;
+
+		}
+
+		function addSparkles() {
+
+			var geometry = createSparkleGeometry( 3000, 800, 7 );
+			var material = createSparkleMaterialPhong();
+
+			sparkleObject1 = new THREE.Mesh( geometry, material );
+			scene.add( sparkleObject1 );
+
+			sparkleObject2 = new THREE.Mesh( geometry, material );
+			sparkleObject2.position.set( 20, 20, 20 );
+			sparkleObject2.scale.set( 0.5, 0.5, 0.5 );
+
+			scene.add( sparkleObject2 );
+
+		}
+
+		// ---------------------------------------------------------------------------------------------------------------
+
+		function onDocumentWheel() {
+
+			camera.fov += -window.event.wheelDelta * 0.01;
+
+			if ( camera.fov > 50 ) {
+
+				camera.fov = 50;
+
+			}
+
+			if ( camera.fov < 10 ) {
+
+				camera.fov = 10;
+
+			}
+
+			camera.updateProjectionMatrix();
+
+		}
+
+		function onDocumentMouseMove( event ) {
+
+			mouse.x = ( event.clientX - window.innerWidth / 2 ) * 2;
+			mouse.y = ( event.clientY - window.innerHeight / 2 ) * 2;
+
+            mouseX = ( event.clientX - windowHalfX );
+            mouseY = ( event.clientY - windowHalfY );
+
+		}
+
+		function onWindowResize( event ) {
+
+			windowHalfX = window.innerWidth / 2;
+			windowHalfY = window.innerHeight / 2;
+
+			winWidth = window.innerWidth;
+			winHeight = window.innerHeight - PLAYER_HEIGHT;
+
+			camera.aspect =  winWidth / winHeight;
+			camera.updateProjectionMatrix();
+
+			renderer.setSize( winWidth, winHeight );
+			composer.setSize( winWidth, winHeight );
+			effectFXAA.uniforms['resolution'].value.set( 1 / winWidth, 1 / winHeight );
+
+		}
+
+		// ---------------------------------------------------------------------------------------------------------------
+
+		function animate() {
+
+			requestAnimationFrame( animate );
+
+			render();
+			stats.update();
+
+			//controls.update()
+
+		}
+
+		// ---------------------------------------------------------------------------------------------------------------
+
+		function render() {
+
+			var delta = clock.getDelta();
+			var time = clock.elapsedTime;
+
+			sparkleObject1.rotation.x = time * 0.125;
+			sparkleObject1.rotation.y = time * 0.225;
+
+			sparkleObject2.rotation.x = time * -0.235;
+			sparkleObject2.rotation.y = time * -0.125;
+
+			sparkleObject1.visible = params.sparkles;
+			sparkleObject2.visible = params.sparkles;
+
+			sphere.visible = params.backgroundVisible;
+
+
+			/*
+			if ( params.pause === false ) {
+
+				camera.position.x += (  mouse.x - camera.position.x ) * 0.05;
+				camera.position.y += ( - mouse.y - camera.position.y ) * 0.05;
+
+			} else {
+
+				camera.position.set( 50, 150, 700 );
+
+			}
+
+			camera.lookAt( center );
+			*/
+
+			targetX = mouseX * 0.14;
+			targetY = mouseY * 0.14;
+
+			angle  += 0.05 * ( targetX - angle );
+			height += 0.05 * ( targetY - height );
+
+			var angle2 = angle * 0.005;
+
+			var freeCameraDistance = 1150;
+
+			var x = -Math.sin( angle2 ) * freeCameraDistance;
+			var z =  Math.cos( angle2 ) * freeCameraDistance;
+			var y = 0.5 * height + 0;
+
+			camera.position.set( x, y, z );
+			camera.lookAt( target );
+
+
+			if ( geoOffset.zOffset !== params.zOffset ||
+				 geoOffset.zFrequency !== params.zFrequency ) {
+
+				var positions = geometry.attributes[ "position" ].array;
+
+				// var ff = Math.round(geoOffset.zFrequency*3);
+				// var ff = Math.round(params.zFrequency);
+				var ff = params.zFrequency * 3;
+
+				for ( var i = 0, il = positions.length; i < il; i += 3 ) {
+
+					if ( ! ( i % ff ) ) {
+
+						positions[ i + 2 ] = params.zOffset;
+
+					} else {
+
+						positions[ i + 2 ] = 0.0;
+
+					}
+
+				}
+
+				geoOffset.zOffset = params.zOffset;
+				geoOffset.zFrequency = params.zFrequency;
+
+				geometry.attributes[ "position" ].needsUpdate = true
+				geometry.attributes[ "normal" ].needsUpdate = true;
+
+			}
+
+			//setPanoramaAngleOffset( time * 0.2 );
+
+
+			// camera.fov.needsUpdate = true;
+
+
+			// console.log('fov', params.fov);
+			// console.log('camera', camera.fov);
+			composer.render();
+
+		}
+
+    </script>
+
+	<script>
+
+	// -----------------------------------------------------------------------------------------------------
+
+	function switchToNextFrame( url ) {
+
+		var masterFrame = parent.document.getElementById( 'master' );
+		console.log( "[Opus] master frame", masterFrame );
+
+		if ( masterFrame ) {
+
+			masterFrame.src = url;
+
+		} else {
+
+			window.location.href = url;
+
+		}
+
+	}
+
+	// -----------------------------------------------------------------------------------------------------
+
+	function playerPlayCallback() {
+	}
+
+	function playerPauseCallback() {
+	}
+
+	function playerSkipCallback() {
+	}
+
+	function playerPlaylistEndCallback() {
+
+		console.log( "[Opus] finished playlist" );
+
+		switchToNextFrame( "../countdown/index.video.html" );
+
+	}
+
+	var ffplayer = new FFPlayer( {
+		title: "First Opus",
+		description: "Visual: Black Mika",
+		artist: [ 'Fractal Fantasy' ],
+
+		mode: 'audio playlist',
+		src: [
+			/*
+			// MONOLITH
+			'../shared/audio/firstopus/1armsUp.mp3',
+			'../shared/audio/firstopus/15teddyP.mp3',
+			'../shared/audio/firstopus/Sinjin Hawke - They Cant Love You v8.5.mp3',
+			'../shared/audio/firstopus/2overdriveReturns.mp3',
+			*/
+
+			/*
+			// SINGULARITY
+			'../shared/audio/firstopus/13shimmer.mp3',
+			'../shared/audio/firstopus/3lost.mp3',
+			'../shared/audio/firstopus/4nailgun.mp3',
+			*/
+
+			/*
+			// WATER
+			'../shared/audio/firstopus/14silk.mp3',
+			'../shared/audio/firstopus/5dontKnow.mp3',
+			'../shared/audio/firstopus/7snow.mp3',
+			*/
+
+
+			// MIKA
+			'../shared/audio/firstopus/8prophecyOfBootyspoon.mp3',
+
+
+			/*
+			// COUNTDOWN
+			'../shared/audio/firstopus/11champ.mp3',
+			'../shared/audio/firstopus/12coldBlood.mp3',
+			'../shared/audio/firstopus/10arpLove.mp3',
+			*/
+
+			/*
+			// OPUS
+			'../shared/audio/firstopus/16inLovingMemory.mp3',
+			*/
+
+
+			/*
+			// UNUSED
+			'../shared/audio/firstopus/6pureCollosus.mp3',
+			'../shared/audio/firstopus/9babeReturns.mp3',
+			*/
+		],
+
+		songTitle: [
+			/*
+			'Arms Up',
+			'Teddy P',
+			"They Can't Love You",
+			'Overdrive Returns',
+			*/
+
+			/*
+			'Shimmer',
+			'Dont Lose Yourself To This',
+			'Nailgun',
+			*/
+
+			/*
+			'Silk',
+			'Dont Know',
+			'Snow',
+			*/
+
+
+			'Ballad of Bootyspoon',
+
+
+			/*
+			'Champ',
+			'Cold Blood',
+			'Arp Love',
+			*/
+
+
+			/*
+			'In Loving Memory',
+			*/
+
+
+			/*
+			'Pure Collosus',
+			'Babe',
+			*/
+		],
+
+
+		autoPlay: true,
+		embedCode: '<div class="block-embed"><form class="block-embed-form"><label for="btn-input-embed">EMBED</label><input id="btn-input-embed" type="text" value="<iframe width= &quot 500px &quot height= &quot 60px &quot scrolling= &quot no &quot frameborder= &quot 0 &quot src= &quot http://fractalfantasy.net/ffplayer-pointclouds-embed.html &quot></iframe>" ><br><label for="btn-input-embed">URL</label><input id="btn-input-embed" type="text" value="http://fractalfantasy.net/#/3/pointclouds"></form></div>',
+		downloadLink: '',
+		embed: true,
+		download: false,
+		volume: true,
+
+		imgRoot: '../shared/img/',
+		loop: false
+
+	} );
+
+	ffplayer.addCallback( "play", playerPlayCallback );
+	ffplayer.addCallback( "pause", playerPauseCallback );
+	ffplayer.addCallback( "end", playerPlaylistEndCallback );
+	ffplayer.addCallback( "skip", playerSkipCallback );
+
+	var elTimeline = document.getElementById( "timeline" );
+	</script>
+  </body>
+</html>
