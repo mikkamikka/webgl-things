@@ -32,6 +32,7 @@
 <script src="js/OBJLoader.js"></script>
 
 <script type="x-shader/x-vertex" id="vertexShader">
+    precision lowp float;
     varying vec2 vUv;
 
     void main() {
@@ -41,6 +42,8 @@
 </script>
 
 <script type="x-shader/x-vertex" id="fragmentShader">
+    precision lowp float;
+    precision lowp int;
     varying vec2 vUv;
 
     uniform float mode;
