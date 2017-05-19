@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title></title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+
+    <style>
+        body {
+            font-family: Monospace;
+            background-color: #000;
+            color: #fff;
+            margin: 0 0 0 0;
+            padding: 0 0 0 0;
+            border: none;
+            cursor: default;
+        }
+        #info {
+            color: #fff;
+            position: absolute;
+            top: 10px;
+            width: 100%;
+            text-align: center;
+            z-index: 100;
+            display:block;
+        }
+        #info a {
+            color: #f00;
+            font-weight: bold;
+            text-decoration: underline;
+            cursor: pointer
+        }
+        #glFullscreen {
+            width: 100%;
+            height: 100vh;
+            min-width: 640px;
+            min-height: 360px;
+            position: relative;
+            overflow: hidden;
+            z-index: 0;
+        }
+        #example {
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            background-color: #000000;
+        }
+        #feedback {
+            color: darkorange;
+        }
+        #dat {
+            user-select: none;
+            position: absolute;
+            right: 0;
+            top: 0;
+            z-Index: 200;
+        }
+        #fileUploadInput {
+            display: none;
+        }
+        #hud {
+            color: #fff;
+            position: absolute;
+            top: 0px;
+            width: 15%;
+            //height: 30%;
+            text-align: left;
+            z-index: 100;
+            display:inline-block;
+            background-color: lightgoldenrodyellow;
+            opacity: 0.5;
+            color: #1b1b1b;
+        }
+        #brick_popup {
+            color: #fff;
+            position: absolute;
+            bottom: 0px;
+            z-index: 100;
+            display:inline-block;
+            background-color: white;
+            opacity: 1.0;
+            overflow: hidden;
+        }
+
+        #brick_popup object {
+            height: 300px;
+            display: inline-block;
+        }
+
+    </style>
+
+</head>
+
+<body>
+<div id="glFullscreen">
+    <canvas id="example"></canvas>
+</div>
+<div id="dat"></div>
+
+<div id="hud">
+    <p id='mesh_data'></p>
+    <p id='material_data'></p>
+</div>
+
+<div id="brick_popup"></div>
+
+
+<input id="fileUploadInput" type="file" name="files[]" multiple accept=".obj,.mtl" />
+
+<script src="js/Detector.js"></script>
+<script src="js/three.js"></script>
+<script src="js/OrbitControls.js"></script>
+<script src="js/MTLLoader.js"></script>
+<script src="js/dat.gui.min.js"></script>
+<script src="js/stats.min.js"></script>
+
+<script src="js/OBJLoader2.js"></script>
+<script src="js/WWOBJLoader2.js"></script>
+
+<script src="js/brick_map.js"></script>
+<script src="js/viewer_lego.js"></script>
+
+</body>
+</html>
