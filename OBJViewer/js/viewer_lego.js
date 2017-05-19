@@ -624,7 +624,10 @@ function onClick( event ) {
 
     } else {
 
-        app.lastIntersected.material.emissive.setHex(0x000000);
+        if (app.lastIntersected !== undefined) {
+            app.lastIntersected.material.emissive.setHex(0x000000);
+            app.lastIntersected = null;
+        }
 
         hidePopup();
 
