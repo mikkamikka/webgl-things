@@ -343,6 +343,32 @@ var WWOBJLoader2Example = (function () {
         scope.pivot.traverse( scopeTraverse );
     };
 
+    WWOBJLoader2Example.prototype.getMaterialByMeshId = function ( mesh_id ) {
+
+        var scope = this;
+        var material;
+
+        scope.traversalFunction  = function ( mesh ) {
+
+            if ( mesh.name === undefined ) return;
+
+            //var index = mesh.name.indexOf( mesh_id );
+
+            if ( mesh.name === mesh_id ) {
+
+                material = mesh.material;
+            }
+
+        };
+
+        var scopeTraverse = function ( object3d ) {
+            scope.traverseSceneMesh( object3d );
+        };
+        scope.pivot.traverse( scopeTraverse );
+
+        return material;
+    };
+
     WWOBJLoader2Example.prototype.splitMaterials = function () {
 
         var scope = this;
@@ -594,11 +620,16 @@ function onClick( event ) {
     if ( part !== null && part !== undefined ) {
 
         if (app.lastIntersected !== part) {
-            part.material.emissive.setHex( 0x0000aa );
+
 
             if (app.lastIntersected !== null && app.lastIntersected !== undefined) {
-                app.lastIntersected.material.emissive.setHex(0x000000);
+
+                //app.lastIntersected.material.emissive.setHex(0x000000);
+                resetMeshHighlight( app.lastIntersected.name );
+
             }
+
+            setMeshHighlight( part.name );
         }
 
         hud_mesh_data.innerHTML = 'Mesh' + '<br />';
@@ -625,7 +656,8 @@ function onClick( event ) {
     } else {
 
         if (app.lastIntersected !== undefined) {
-            app.lastIntersected.material.emissive.setHex(0x000000);
+            //app.lastIntersected.material.emissive.setHex(0x000000);
+            resetMeshHighlight( app.lastIntersected.name );
             app.lastIntersected = null;
         }
 
@@ -635,14 +667,38 @@ function onClick( event ) {
 
 }
 
+function setMeshHighlight( mesh_id ) {
+
+    var meshIDList = getMeshGroupByMeshId( mesh_id );
+    for ( var i = 0; i < meshIDList.length; i++ ) {
+
+        var material = app.getMaterialByMeshId( meshIDList[i] );
+        material.emissive.setHex( 0x0000aa );
+
+    }
+}
+
+function resetMeshHighlight( mesh_id ) {
+
+    var meshIDList = getMeshGroupByMeshId( mesh_id );
+    for ( var i = 0; i < meshIDList.length; i++ ) {
+
+        var material = app.getMaterialByMeshId( meshIDList[i] );
+        material.emissive.setHex( 0x000000 );
+
+    }
+}
+
 function invokePopup( mesh_id ) {
 
     //TODO make mesh_id to brick_id mapper
 
     var brick_popup = document.getElementById("brick_popup");
 
-    if (brick_map[mesh_id] !== undefined) {
-        brick_popup.innerHTML = '<object type="text/html" data="bricks/' + brick_map[mesh_id] + '.html" ></object>';
+    var uri = getURIbyMeshId( mesh_id );
+
+    if ( uri !== "" ) {
+        brick_popup.innerHTML = '<object type="text/html" data="bricks/' + uri + '" ></object>';
     } else {
         //TODO 'not found error' page
         brick_popup.innerHTML = '<object type="text/html" data="bricks/' + '404' + '.html" ></object>';
@@ -758,6 +814,9 @@ app.setMaterials = function() {
     //     } );
 
 }
+
+// automate highlight.js file reload
+setInterval( reloadHighlightFile, 1000 );
 
 // kick render loop
 render();
