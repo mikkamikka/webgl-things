@@ -630,6 +630,7 @@ function onClick( event ) {
             }
 
             part.material.emissive.setHex(0x0000aa);
+            resetSelection(app.highlightedSelectionList);
             //setMeshHighlightGroup( part.name );
         }
 
@@ -765,13 +766,16 @@ function hidePopup() {
 
 function handleLoadButtonClick(){
 
-    reloadHighlightFile();
+    reloadHighlightFile( reloadSelection);
 
-    resetSelection(app.highlightedSelectionList);
+    function reloadSelection() {
 
-    setSelection(highlight[0].mesh_id);
+        resetSelection(app.highlightedSelectionList);
 
-    invokePopupWithURI(highlight[0].uri);
+        setSelection(highlight[0].mesh_id);
+
+        invokePopupWithURI(highlight[0].uri);
+    }
 }
 
 

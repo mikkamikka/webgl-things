@@ -5,7 +5,7 @@
 var js_txt;
 var highlight;
 
-function loadJS(file) {
+function loadJS(file, callback) {
     var content;
     var client = new XMLHttpRequest();
     client.open('GET', file);
@@ -17,18 +17,20 @@ function loadJS(file) {
                 js_txt = client.responseText;
                 eval(js_txt);
                 console.log("highlight.js reloaded");
+
+                callback();
             }
         }
     }
     client.send(null);
 }
 
-function reloadHighlightFile() {
+function reloadHighlightFile( callback ) {
 
-    loadJS("js/highlight.js");
+    loadJS("js/highlight.js", callback);
 
 }
-reloadHighlightFile();
+//reloadHighlightFile();
 
 function getURIbyMeshId( mesh_id ){
 
