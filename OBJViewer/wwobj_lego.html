@@ -88,6 +88,20 @@
             display: inline-block;
         }
 
+        #buttons {
+            color: #fff;
+            position: absolute;
+            top: 10px;
+            //width: 15%;
+            left: 10%;
+            text-align: left;
+            z-index: 100;
+            display:inline-block;
+            //background-color: lightgoldenrodyellow;
+            opacity: 1.0;
+            color: #1b1b1b;
+        }
+
     </style>
 
 </head>
@@ -107,6 +121,10 @@
 
 
 <input id="fileUploadInput" type="file" name="files[]" multiple accept=".obj,.mtl" />
+
+<div id="buttons">
+    <input id="loadButton" type="button" value="Load highlight.js" onclick="handleLoadButtonClick();"/>
+</div>
 
 <script src="js/Detector.js"></script>
 <script src="js/three.js"></script>

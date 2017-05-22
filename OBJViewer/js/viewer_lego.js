@@ -485,7 +485,7 @@ var WWOBJLoader2Example = (function () {
             }
         } else {
 
-            INTERSECTED = null;
+            INTERSECTED = undefined;
 
             if ( newIntersected === undefined ) return;
             if ( newIntersected.material === undefined ) return;
@@ -624,12 +624,13 @@ function onClick( event ) {
 
             if (app.lastIntersected !== null && app.lastIntersected !== undefined) {
 
-                //app.lastIntersected.material.emissive.setHex(0x000000);
-                resetMeshHighlight( app.lastIntersected.name );
+                app.lastIntersected.material.emissive.setHex(0x000000);
+                //resetMeshHighlightGroup( app.lastIntersected.name );
 
             }
 
-            setMeshHighlight( part.name );
+            part.material.emissive.setHex(0x0000aa);
+            //setMeshHighlightGroup( part.name );
         }
 
         hud_mesh_data.innerHTML = 'Mesh' + '<br />';
@@ -656,9 +657,9 @@ function onClick( event ) {
     } else {
 
         if (app.lastIntersected !== undefined) {
-            //app.lastIntersected.material.emissive.setHex(0x000000);
-            resetMeshHighlight( app.lastIntersected.name );
-            app.lastIntersected = null;
+            app.lastIntersected.material.emissive.setHex(0x000000);
+            //resetMeshHighlightGroup( app.lastIntersected.name );
+            app.lastIntersected = undefined;
         }
 
         hidePopup();
@@ -667,9 +668,12 @@ function onClick( event ) {
 
 }
 
-function setMeshHighlight( mesh_id ) {
+app.highlightedSelectionList = [];
+
+function setMeshHighlightGroup( mesh_id ) {
 
     var meshIDList = getMeshGroupByMeshId( mesh_id );
+
     for ( var i = 0; i < meshIDList.length; i++ ) {
 
         var material = app.getMaterialByMeshId( meshIDList[i] );
@@ -678,7 +682,7 @@ function setMeshHighlight( mesh_id ) {
     }
 }
 
-function resetMeshHighlight( mesh_id ) {
+function resetMeshHighlightGroup( mesh_id ) {
 
     var meshIDList = getMeshGroupByMeshId( mesh_id );
     for ( var i = 0; i < meshIDList.length; i++ ) {
@@ -689,13 +693,57 @@ function resetMeshHighlight( mesh_id ) {
     }
 }
 
-function invokePopup( mesh_id ) {
+function setSelection( array ) {
 
-    //TODO make mesh_id to brick_id mapper
+    for ( var i = 0; i < array.length; i++ ) {
+
+        var material = app.getMaterialByMeshId( array[i] );
+        material.emissive.setHex( 0x0000aa );
+
+    }
+
+    app.highlightedSelectionList = array;
+}
+
+function resetSelection( array ) {
+
+    for ( var i = 0; i < array.length; i++ ) {
+
+        var material = app.getMaterialByMeshId( array[i] );
+        material.emissive.setHex( 0x000000 );
+
+    }
+
+    app.highlightedSelectionList = [];
+
+    if (app.lastIntersected !== undefined) {
+        app.lastIntersected.material.emissive.setHex(0x000000);
+        //resetMeshHighlightGroup( app.lastIntersected.name );
+        app.lastIntersected = undefined;
+    }
+}
+
+function invokePopup( mesh_id ) {
 
     var brick_popup = document.getElementById("brick_popup");
 
-    var uri = getURIbyMeshId( mesh_id );
+    //var uri = getURIbyMeshId( mesh_id );
+    var uri = brick_map[mesh_id];
+
+    if ( uri !== undefined ) {
+        brick_popup.innerHTML = '<object type="text/html" data="bricks/' + uri + '.html" ></object>';
+    } else {
+        //TODO 'not found error' page
+        brick_popup.innerHTML = '<object type="text/html" data="bricks/' + '404' + '.html" ></object>';
+    }
+
+    brick_popup.style.visibility = 'visible';
+
+}
+
+function invokePopupWithURI( uri ) {
+
+    var brick_popup = document.getElementById("brick_popup");
 
     if ( uri !== "" ) {
         brick_popup.innerHTML = '<object type="text/html" data="bricks/' + uri + '" ></object>';
@@ -714,6 +762,18 @@ function hidePopup() {
     brick_popup.style.visibility = 'hidden';
 
 }
+
+function handleLoadButtonClick(){
+
+    reloadHighlightFile();
+
+    resetSelection(app.highlightedSelectionList);
+
+    setSelection(highlight[0].mesh_id);
+
+    invokePopupWithURI(highlight[0].uri);
+}
+
 
 console.log( 'Starting initialisation phase...' );
 app.initGL();
@@ -816,7 +876,7 @@ app.setMaterials = function() {
 }
 
 // automate highlight.js file reload
-setInterval( reloadHighlightFile, 1000 );
+//setInterval( reloadHighlightFile, 1000 );
 
 // kick render loop
 render();
