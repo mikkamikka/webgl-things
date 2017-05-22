@@ -510,8 +510,8 @@ var hud_material_data = document.getElementById( 'material_data' );
 
 var app = new WWOBJLoader2Example( renderCanvas );
 
-//var stats = new Stats();
-//container.appendChild( stats.dom );
+var stats = new Stats();
+container.appendChild( stats.dom );
 
 // Init dat.gui and controls
 var elemFileInput = document.getElementById( 'fileUploadInput' );
@@ -596,7 +596,7 @@ var render = function () {
 
     app.checkIntercestions();
 
-    //stats.update();
+    stats.update();
 };
 
 
