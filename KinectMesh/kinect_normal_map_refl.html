@@ -1,107 +1,104 @@
 
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <title>Kinect displacement and normal mapping</title>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-    <style>
-      body {
-        color: #ffffff;
-        font-family:Monospace;
-        font-size:13px;
-        text-align:center;
-        font-weight: normal;
+<head>
+  <title>Kinect displacement and normal mapping</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+  <style>
+    body {
+      color: #ffffff;
+      font-family:Monospace;
+      font-size:13px;
+      text-align:center;
+      font-weight: normal;
 
-        background-color: #000000;
-        margin: 0px;
-        overflow: hidden;
-      }
-      #info {
-        position: absolute;
-        bottom: 0px; width: 100%;
-        padding: 5px;
-      }
-      #gui_container {
-        right: 0;
-        position: absolute;
-        top: 0;
-        z-index:100;
-      }
-      #gui {
-        //right: 0;
-        //position: absolute;
-        //top: 0;
-        //z-index:100;
-      }
-      #checkboxes {
-        right: 0;
-        position: absolute;
-        top: 50%;
-        width: 220px;
-        z-index:100;
-      }
-      #video_buttons {
-        position: absolute;
-        top: 50%; transform: translateY(-50%);
-        left: 0px;
-        width: 170px;
-        z-index: 100;
-      }
-      video {
-        width: 100%;
-        display:block;
-        padding: 4px;
-      }
-    </style>
-  </head>
-  <body>
+      background-color: #000000;
+      margin: 0px;
+      overflow: hidden;
+    }
+    #info {
+      position: absolute;
+      bottom: 0px; width: 100%;
+      padding: 5px;
+    }
+    #gui_container {
+      right: 0;
+      position: absolute;
+      top: 0;
+      z-index:100;
+    }
+    #gui {
+    //right: 0;
+    //position: absolute;
+    //top: 0;
+    //z-index:100;
+    }
+    #checkboxes {
+      right: 0;
+      position: absolute;
+      top: 50%;
+      width: 220px;
+      z-index:100;
+    }
+    #video_buttons {
+      position: absolute;
+      top: 50%; transform: translateY(-50%);
+      left: 0px;
+      width: 170px;
+      z-index: 100;
+    }
+    video {
+      width: 100%;
+      display:block;
+      padding: 4px;
+    }
+  </style>
+</head>
+<body>
 
-    <div id="info">
-      Kinect depth height map + normals estimation from texture + reflection mapping <br/>
-      Created by <a href="http://twitter.com/blackmika" target="_blank">@blackmika</a>.
-    </div>
+<div id="info">
+  Kinect depth height map + normals estimation from texture + reflection mapping <br/>
+  Created by <a href="http://twitter.com/blackmika" target="_blank">@blackmika</a>.
+</div>
 
-    <div id="container"></div>
+<div id="container"></div>
 
 
-    <div id="video_buttons">
-      <div style="font-weight: normal">Click to play/pause</div>
-      <div id="buttons">
-        <video autoplay accessKey="0" >
-          <source src="media/anya6000.ogg" type='video/ogg; codecs="theora, vorbis"'>
-        </video>
-        <!--video accessKey="2">
-          <source src="../image/waves1.ogg" type='video/ogg; codecs="theora, vorbis"'>
-        </video>
-        <video accessKey="3">
-          <source src="../image/waves5.ogg" type='video/ogg; codecs="theora, vorbis"'>
-        </video>
-        <video accessKey="4">
-          <source src="../image/waves6.ogg" type='video/ogg; codecs="theora, vorbis"'>
-        </video-->
-      </div>
-    </div>
+<div id="video_buttons">
+  <div style="font-weight: normal">Click to play/pause</div>
+  <div id="buttons">
+    <video autoplay accessKey="0">
+      <source src="media/1.ogg" type='video/ogg; codecs="theora, vorbis"'>
+    </video>
+    <!--video accessKey="3">
+      <source src="../image/waves5.ogg" type='video/ogg; codecs="theora, vorbis"'>
+    </video>
+    <video accessKey="4">
+      <source src="../image/waves6.ogg" type='video/ogg; codecs="theora, vorbis"'>
+    </video-->
+  </div>
+</div>
 
-    <div id="gui_container">
-      <div id="gui"></div>
-    </div>
-    <div id="checkboxes" align="left">
-      <input type="checkbox" id="cbox1"  onclick='setRefractionMode();'>
-      <label for="cbox1">Refraction</label><br>
-      <input type="checkbox" id="cbox2" value="" onclick='setNormalMode2();'>
-      <label for="cbox2">Normals mode 2</label><br>
-      <input type="checkbox" id="cbox3" value="" onclick='setSmoothTexture();'>
-      <label for="cbox3">Use Smooth Texture</label>
-    </div>
+<div id="gui_container">
+  <div id="gui"></div>
+</div>
+<div id="checkboxes" align="left">
+  <input type="checkbox" id="cbox1"  onclick='setRefractionMode();'>
+  <label for="cbox1">Refraction</label><br>
+  <input type="checkbox" id="cbox2" value="" onclick='setNormalMode2();'>
+  <label for="cbox2">Normals mode 2</label><br>
+  <input type="checkbox" id="cbox3" value="" onclick='setSmoothTexture();'>
+  <label for="cbox3">Use Smooth Texture</label>
+</div>
 
-    <script src="../r78/three.js"></script>
-    <script src="../libs/Detector.js"></script>
-    <script src="../libs/stats.min.js"></script>
-    <script src="../libs/dat.gui.min.js"></script>
-    <script src="../libs/controls/OrbitControls.js"></script>
+<script src="../r78/three.js"></script>
+<script src="../libs/Detector.js"></script>
+<script src="../libs/stats.min.js"></script>
+<script src="../libs/dat.gui.min.js"></script>
+<script src="../libs/controls/OrbitControls.js"></script>
 
-    <script id="smooth_vs" type="x-shader/x-vertex">
+<script id="smooth_vs" type="x-shader/x-vertex">
     varying vec2 vUv;
     void main() {
       vUv = uv;
@@ -110,7 +107,7 @@
 
     </script>
 
-    <script id="smooth_fs" type="x-shader/x-fragment">
+<script id="smooth_fs" type="x-shader/x-fragment">
 
     uniform sampler2D colorMap;
     varying vec2 vUv;
@@ -191,7 +188,7 @@
 
     </script>
 
-    <script id="vertexShader" type="x-shader/x-vertex">
+<script id="vertexShader" type="x-shader/x-vertex">
 
     varying vec2 vUv;
     varying vec3 vNormal;
@@ -283,7 +280,7 @@
 
     </script>
 
-    <script id="fragmentShader" type="x-shader/x-fragment">
+<script id="fragmentShader" type="x-shader/x-fragment">
 
     varying vec2 vUv;
     varying vec3 vNormal;
@@ -309,322 +306,315 @@
 
     </script>
 
-    <script>
+<script>
 
-      if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
+  if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
 
-      var container, stats;
+  var container, stats;
 
-      var camera, scene, renderer, controls;
-      var object, edges, material, material2;
-      var video = [], video_texture, textureSphere;
+  var camera, scene, renderer, controls;
+  var object, edges, material, material2;
+  var video = [], video_texture, textureSphere;
 
-      var depthWidth = 512, depthHeight = 424, smoothTexture;
-      var textureCamera, textureScene, textureRenderer, textureMesh, textureMaterial, textureGeometry;
-      var smoothWidth, smoothHeight;
-
-      var params = {
-        displacementScale: 240,
-        normalsRatio: 4.5,
-        lookupRadius: 4.5,
-        mode: 1,
-        weight: 1.0,
-        refraction: setRefractionMode,
-        normalMode2: setNormalMode2
-      }
-
-      var useSmoothTexture = false;
-
-      function setSmoothTexture() {
+  var depthWidth = 512, depthHeight = 424, smoothTexture;
+  var textureCamera, textureScene, textureRenderer, textureMesh, textureMaterial, textureGeometry;
+  var smoothWidth, smoothHeight;
+
+  var params = {
+    displacementScale: 240,
+    normalsRatio: 4.5,
+    lookupRadius: 4.5,
+    mode: 1,
+    weight: 1.0,
+    refraction: setRefractionMode,
+    normalMode2: setNormalMode2
+  }
+
+  var useSmoothTexture = false;
+
+  function setSmoothTexture() {
 
-        useSmoothTexture = ! useSmoothTexture;
+    useSmoothTexture = ! useSmoothTexture;
 
-        if ( useSmoothTexture )
-          material.uniforms[ 'displacementMap' ].value = smoothTexture.texture;
-        else
-          material.uniforms[ 'displacementMap' ].value = video_texture;
+    if ( useSmoothTexture )
+      material.uniforms[ 'displacementMap' ].value = smoothTexture.texture;
+    else
+      material.uniforms[ 'displacementMap' ].value = video_texture;
 
-      }
+  }
 
-      var refractionMode = 1;
+  var refractionMode = 1;
 
-      function setRefractionMode() {
+  function setRefractionMode() {
 
-        refractionMode = -1 * refractionMode;
-        material.uniforms[ 'refractionMode' ].value = refractionMode;
+    refractionMode = -1 * refractionMode;
+    material.uniforms[ 'refractionMode' ].value = refractionMode;
 
-      }
+  }
 
-      var normalMode2 = -1;
+  var normalMode2 = -1;
 
-      function setNormalMode2() {
+  function setNormalMode2() {
 
-        normalMode2 = -1 * normalMode2;
-        material.uniforms[ 'normalMode2' ].value = normalMode2;
+    normalMode2 = -1 * normalMode2;
+    material.uniforms[ 'normalMode2' ].value = normalMode2;
 
-      }
+  }
 
-      init();
-      animate();
+  init();
+  animate();
 
-      var gui = new dat.GUI();
-      //gui.remember(params);
-      //var f0 = gui.addFolder('Params');
-      gui.add(params, 'displacementScale').min(1).max(600).step(1).onChange(
-        function(value){
-          material.uniforms[ 'displacementScale' ].value = value;
-        } );
-      gui.add(params, 'normalsRatio').min(1).max(30).step(0.1).onChange(
-        function(value){
-          material.uniforms[ 'normalsRatio' ].value = value;
-        } );
-      gui.add(params, 'lookupRadius').min(0.1).max(10).step(0.1).onChange(
-        function(value){
-          material.uniforms[ 'lookupRadius' ].value = value;
-        } );
-      gui.add(params, 'mode').min(0).max(1).step(1).onChange(
-        function(value){
-          material.uniforms[ 'mode' ].value = value;
-        } );
-      //gui.add(params, 'refraction');
-      //gui.add(params, 'normalMode2');
+  var gui = new dat.GUI();
+  //gui.remember(params);
+  //var f0 = gui.addFolder('Params');
+  gui.add(params, 'displacementScale').min(1).max(600).step(1).onChange(
+          function(value){
+            material.uniforms[ 'displacementScale' ].value = value;
+          } );
+  gui.add(params, 'normalsRatio').min(1).max(30).step(0.1).onChange(
+          function(value){
+            material.uniforms[ 'normalsRatio' ].value = value;
+          } );
+  gui.add(params, 'lookupRadius').min(0.1).max(10).step(0.1).onChange(
+          function(value){
+            material.uniforms[ 'lookupRadius' ].value = value;
+          } );
+  gui.add(params, 'mode').min(0).max(1).step(1).onChange(
+          function(value){
+            material.uniforms[ 'mode' ].value = value;
+          } );
+  //gui.add(params, 'refraction');
+  //gui.add(params, 'normalMode2');
 
-      gui.close();
+  gui.close();
 
-      function setSmoothingPass(){
+  function setSmoothingPass(){
 
-        // new render-to-texture scene
-        textureScene = new THREE.Scene();
+    // new render-to-texture scene
+    textureScene = new THREE.Scene();
 
-        // you may need to modify these parameters
-        var renderTargetParams = {
-          minFilter:THREE.LinearFilter,
-          stencilBuffer:false,
-          depthBuffer:false
-        };
+    // you may need to modify these parameters
+    var renderTargetParams = {
+      minFilter:THREE.LinearFilter,
+      stencilBuffer:false,
+      depthBuffer:false
+    };
 
 
-        smoothWidth = depthWidth * 2;
-        smoothHeight = depthHeight * 2;
+    smoothWidth = depthWidth * 2;
+    smoothHeight = depthHeight * 2;
 
-        // create buffer
-        smoothTexture = new THREE.WebGLRenderTarget( smoothWidth, smoothHeight, renderTargetParams );
+    // create buffer
+    smoothTexture = new THREE.WebGLRenderTarget( smoothWidth, smoothHeight, renderTargetParams );
 
-        // custom RTT materials
-        myUniforms = {
-          colorMap: { type: "t", value: video_texture },
-          resolution: { type: "v2", value: new THREE.Vector2( smoothWidth, smoothHeight )},
-          fWidth: { type: "f", value: depthWidth },
-          fHeight: { type: "f", value: depthHeight }
-        };
-        textureMaterial = new THREE.ShaderMaterial({
-          uniforms: myUniforms,
-          vertexShader: document.getElementById( 'smooth_vs' ).textContent,
-          fragmentShader: document.getElementById( 'smooth_fs' ).textContent
-        });
+    // custom RTT materials
+    myUniforms = {
+      colorMap: { type: "t", value: video_texture },
+      resolution: { type: "v2", value: new THREE.Vector2( smoothWidth, smoothHeight )},
+      fWidth: { type: "f", value: depthWidth },
+      fHeight: { type: "f", value: depthHeight }
+    };
+    textureMaterial = new THREE.ShaderMaterial({
+      uniforms: myUniforms,
+      vertexShader: document.getElementById( 'smooth_vs' ).textContent,
+      fragmentShader: document.getElementById( 'smooth_fs' ).textContent
+    });
 
-        // Setup render-to-texture scene
-        textureCamera = new THREE.OrthographicCamera( smoothWidth / - 2,
-                smoothWidth / 2,
-                smoothHeight / 2,
-                smoothHeight / - 2, -10000, 10000 );
+    // Setup render-to-texture scene
+    textureCamera = new THREE.OrthographicCamera( smoothWidth / - 2,
+            smoothWidth / 2,
+            smoothHeight / 2,
+            smoothHeight / - 2, -10000, 10000 );
 
-        textureGeometry = new THREE.PlaneBufferGeometry( smoothWidth, smoothHeight );
-        textureMesh = new THREE.Mesh( textureGeometry, textureMaterial );
-        textureMesh.position.z = -100;
+    textureGeometry = new THREE.PlaneBufferGeometry( smoothWidth, smoothHeight );
+    textureMesh = new THREE.Mesh( textureGeometry, textureMaterial );
+    textureMesh.position.z = -100;
 
-        textureScene.add( textureMesh );
+    textureScene.add( textureMesh );
 
-      }
+  }
 
-      function createThing() {
+  function createThing() {
 
-        var geometry = new THREE.PlaneBufferGeometry( 512, 424, 512, 424 );
+    var geometry = new THREE.PlaneBufferGeometry( 512, 424, 512, 424 );
 
-        material = new THREE.ShaderMaterial( {
+    material = new THREE.ShaderMaterial( {
 
-          uniforms: {
+      uniforms: {
 
-            "displacementMap" : { type: "t", value: video_texture },
-            "displacementScale" : { type: "f", value: params.displacementScale },
-            "displacementBias" : { type: "f", value: 0 },
+        "displacementMap" : { type: "t", value: video_texture },
+        "displacementScale" : { type: "f", value: params.displacementScale },
+        "displacementBias" : { type: "f", value: 0 },
 
-            //"normalMap" : { type: "t", value: video_texture },
-            //"normalScale" : { type: "v2", value: new THREE.Vector2( 1, 1 ) },
+        //"normalMap" : { type: "t", value: video_texture },
+        //"normalScale" : { type: "v2", value: new THREE.Vector2( 1, 1 ) },
 
-            "resolution" : { type: "v2", value: new THREE.Vector2( depthWidth, depthHeight ) },
-            "normalsRatio" : { type: "f", value: params.normalsRatio },
-            "lookupRadius" : { type: "f", value: params.lookupRadius },
-            "mode" : { type: "f", value: 0.0 },
-            "refractionMode" : { type: "f", value: 1.0 },
-            "normalMode2" : { type: "f", value: -1.0 },
-            //"weight" : { type: "f", value: 1.0 },
+        "resolution" : { type: "v2", value: new THREE.Vector2( depthWidth, depthHeight ) },
+        "normalsRatio" : { type: "f", value: params.normalsRatio },
+        "lookupRadius" : { type: "f", value: params.lookupRadius },
+        "mode" : { type: "f", value: 0.0 },
+        "refractionMode" : { type: "f", value: 1.0 },
+        "normalMode2" : { type: "f", value: -1.0 },
+        //"weight" : { type: "f", value: 1.0 },
 
-            envMap: { type: "t", value: textureSphere },
-            time: { type: "f", value: 0 }
+        envMap: { type: "t", value: textureSphere },
+        time: { type: "f", value: 0 }
 
-          },
-          vertexShader: document.getElementById( 'vertexShader' ).textContent,
-          fragmentShader: document.getElementById( 'fragmentShader' ).textContent,
+      },
+      vertexShader: document.getElementById( 'vertexShader' ).textContent,
+      fragmentShader: document.getElementById( 'fragmentShader' ).textContent,
 
-        } );
+    } );
 
-        material2 = new THREE.MeshPhongMaterial({
-          color: 0x004488,
-          displacementMap: video_texture,
-          displacementScale: 120,
-          shading: THREE.FlatShading
+    var mesh = new THREE.Mesh( geometry, material );
+    return mesh;
 
-        })
+  }
 
-        var mesh = new THREE.Mesh( geometry, material );
-        return mesh;
+  function addLights() {
 
-      }
+    var ambientLight = new THREE.AmbientLight( 0x666666 );
+    scene.add( ambientLight );
 
-      function addLights() {
+    var lights = [];
+    lights[0] = new THREE.PointLight( 0xffffff, 0.5, 0 );
+    lights[1] = new THREE.PointLight( 0xffffff, 0.5, 0 );
+    lights[2] = new THREE.PointLight( 0xffffff, 0.5, 0 );
 
-        var ambientLight = new THREE.AmbientLight( 0x666666 );
-        scene.add( ambientLight );
+    lights[0].position.set( -300, 600, 200 );
+    lights[1].position.set( 100, 600, 100 );
+    lights[2].position.set( -100, -300, 1000 );
 
-        var lights = [];
-        lights[0] = new THREE.PointLight( 0xffffff, 0.5, 0 );
-        lights[1] = new THREE.PointLight( 0xffffff, 0.5, 0 );
-        lights[2] = new THREE.PointLight( 0xffffff, 0.5, 0 );
+    scene.add( lights[0] );
+    scene.add( lights[1] );
+    scene.add( lights[2] );
 
-        lights[0].position.set( -300, 600, 200 );
-        lights[1].position.set( 100, 600, 100 );
-        lights[2].position.set( -100, -300, 1000 );
+  }
 
-        scene.add( lights[0] );
-        scene.add( lights[1] );
-        scene.add( lights[2] );
+  function init() {
 
-      }
+    container = document.getElementById( 'container' );
 
-      function init() {
+    camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 10000 );
+    camera.position.z = 800;
 
-        container = document.getElementById( 'container' );
+    scene = new THREE.Scene();
 
-        camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 10000 );
-        camera.position.z = 800;
+    //addLights();
 
-        scene = new THREE.Scene();
+    var btns = document.getElementById('buttons').children;
 
-        //addLights();
+    for (var i=0; i < btns.length; i++){
 
-        var btns = document.getElementById('buttons').children;
+      video[i] = btns[i];
+      video[i].playbackRate = 1.0;
 
-        for (var i=0; i < btns.length; i++){
+      video[i].addEventListener("ended", function(args) {
 
-            video[i] = btns[i];
-            video[i].playbackRate = 1.0;
+        var ix = args.target.accessKey;
+        //video[ix].currentTime = 0;
+        //video[ix].play();
+        video[ix].load();
+        video[ix].play();
 
-            video[i].addEventListener("ended", function(args) {
+      });
 
-              var ix = args.target.accessKey;
-              //video[ix].currentTime = 0;
-              //video[ix].play();
-              video[ix].load();
+      video[i].addEventListener("click", function(args) {
 
-            });
-
-          video[i].addEventListener("click", function(args) {
-
-            var other_btns = args.target.parentElement.children;
-            var ix = args.target.accessKey;
-            for (var i=0; i < other_btns.length; i++){
-              if (i != ix) video[i].pause();
-            }
-            video[ix].paused ? video[ix].play() : video[ix].pause();
-
-            //video_texture = new THREE.VideoTexture( video[ix] );
-            //video_texture.minFilter = THREE.LinearFilter;
-            //video_texture.magFilter = THREE.LinearFilter;
-            //video_texture.format = THREE.RGBFormat;
-
-            //material.uniforms[ 'displacementMap' ].value = smoothTexture.texture;
-            //material2.displacementMap = video_texture;
-
-          });
-
+        var other_btns = args.target.parentElement.children;
+        var ix = args.target.accessKey;
+        for (var i=0; i < other_btns.length; i++){
+          if (i != ix) video[i].pause();
         }
+        video[ix].paused ? video[ix].play() : video[ix].pause();
 
-        video_texture = new THREE.VideoTexture( video[0] );
+        video_texture = new THREE.VideoTexture( video[ix] );
         video_texture.minFilter = THREE.LinearFilter;
         video_texture.magFilter = THREE.LinearFilter;
         video_texture.format = THREE.RGBFormat;
-        //video[1].play();
 
-        textureSphere = THREE.ImageUtils.loadTexture( "../image/pai_pano_sm.jpg" );
-        //textureSphere.mapping = THREE.SphericalReflectionMapping;
-        //textureSphere.mapping = THREE.EquirectangularRefractionMapping;
+        material.uniforms[ 'displacementMap' ].value = video_texture;
+        //material2.displacementMap = video_texture;
 
-        var sphere = new THREE.Mesh( new THREE.SphereGeometry( 1000, 60, 60 ),
-                new THREE.MeshBasicMaterial( { map: textureSphere } ) );
-        sphere.scale.x = -1;
-        sphere.doubleSided = true;
-        scene.add( sphere );
+      });
 
-        setSmoothingPass();
+    }
 
-        object = createThing();
+    video_texture = new THREE.VideoTexture( video[0] );
+    video_texture.minFilter = THREE.LinearFilter;
+    video_texture.magFilter = THREE.LinearFilter;
+    video_texture.format = THREE.RGBFormat;
+    //video[1].play();
 
-        scene.add( object );
+    textureSphere = THREE.ImageUtils.loadTexture( "../image/pai_pano_sm.jpg" );
+    //textureSphere.mapping = THREE.SphericalReflectionMapping;
+    //textureSphere.mapping = THREE.EquirectangularRefractionMapping;
 
-        renderer = new THREE.WebGLRenderer({
-            //antialias: true
-        });
+    var sphere = new THREE.Mesh( new THREE.SphereGeometry( 1000, 60, 60 ),
+            new THREE.MeshBasicMaterial( { map: textureSphere } ) );
+    sphere.scale.x = -1;
+    sphere.doubleSided = true;
+    //scene.add( sphere );
 
-        renderer.setClearColor( 0x101010 );
-        renderer.setPixelRatio( window.devicePixelRatio );
-        renderer.setSize( window.innerWidth, window.innerHeight );
-        container.appendChild( renderer.domElement );
+    setSmoothingPass();
 
-        controls = new THREE.OrbitControls( camera, renderer.domElement );
-        controls.maxDistance = 1300;
+    object = createThing();
 
-        stats = new Stats();
-        stats.domElement.style.position = 'absolute';
-        stats.domElement.style.top = '0px';
-        container.appendChild( stats.domElement );
+    scene.add( object );
 
-        window.addEventListener( 'resize', onWindowResize, false );
+    renderer = new THREE.WebGLRenderer({
+      //antialias: true
+    });
 
-      }
+    renderer.setClearColor( 0x101010 );
+    renderer.setPixelRatio( window.devicePixelRatio );
+    renderer.setSize( window.innerWidth, window.innerHeight );
+    container.appendChild( renderer.domElement );
 
-      function onWindowResize( event ) {
+    controls = new THREE.OrbitControls( camera, renderer.domElement );
+    controls.maxDistance = 1300;
 
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
+    stats = new Stats();
+    stats.domElement.style.position = 'absolute';
+    stats.domElement.style.top = '0px';
+    container.appendChild( stats.domElement );
 
-        renderer.setSize( window.innerWidth, window.innerHeight );
+    window.addEventListener( 'resize', onWindowResize, false );
 
-      }
+  }
 
-      function animate() {
+  function onWindowResize( event ) {
 
-        requestAnimationFrame( animate );
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
 
-        render();
-        stats.update();
+    renderer.setSize( window.innerWidth, window.innerHeight );
 
-      }
+  }
 
-      var start = Date.now();
+  function animate() {
 
-      function render() {
+    requestAnimationFrame( animate );
 
-        //var time = performance.now();
+    render();
+    stats.update();
 
-        if (useSmoothTexture)
-          renderer.render( textureScene, textureCamera, smoothTexture, true );
+  }
 
-        renderer.render( scene, camera );
+  var start = Date.now();
 
-      }
+  function render() {
 
-    </script>
+    //var time = performance.now();
 
-  </body>
+    if (useSmoothTexture)
+      renderer.render( textureScene, textureCamera, smoothTexture, true );
+
+    renderer.render( scene, camera );
+
+  }
+
+</script>
+
+</body>
 </html>
