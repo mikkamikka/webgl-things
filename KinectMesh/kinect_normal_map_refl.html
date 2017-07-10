@@ -71,12 +71,9 @@
     <video autoplay accessKey="0">
       <source src="media/1.ogg" type='video/ogg; codecs="theora, vorbis"'>
     </video>
-    <!--video accessKey="3">
-      <source src="../image/waves5.ogg" type='video/ogg; codecs="theora, vorbis"'>
+    <video accessKey="1">
+      <source src="media/zora.ogg" type='video/ogg; codecs="theora, vorbis"'>
     </video>
-    <video accessKey="4">
-      <source src="../image/waves6.ogg" type='video/ogg; codecs="theora, vorbis"'>
-    </video-->
   </div>
 </div>
 
@@ -395,11 +392,10 @@
 
     // you may need to modify these parameters
     var renderTargetParams = {
-      minFilter:THREE.LinearFilter,
-      stencilBuffer:false,
-      depthBuffer:false
+      minFilter: THREE.LinearFilter,
+      stencilBuffer: false,
+      depthBuffer: false
     };
-
 
     smoothWidth = depthWidth * 2;
     smoothHeight = depthHeight * 2;
@@ -424,7 +420,7 @@
     textureCamera = new THREE.OrthographicCamera( smoothWidth / - 2,
             smoothWidth / 2,
             smoothHeight / 2,
-            smoothHeight / - 2, -10000, 10000 );
+            smoothHeight / - 2, -1000, 1000 );
 
     textureGeometry = new THREE.PlaneBufferGeometry( smoothWidth, smoothHeight );
     textureMesh = new THREE.Mesh( textureGeometry, textureMaterial );
@@ -471,36 +467,14 @@
 
   }
 
-  function addLights() {
-
-    var ambientLight = new THREE.AmbientLight( 0x666666 );
-    scene.add( ambientLight );
-
-    var lights = [];
-    lights[0] = new THREE.PointLight( 0xffffff, 0.5, 0 );
-    lights[1] = new THREE.PointLight( 0xffffff, 0.5, 0 );
-    lights[2] = new THREE.PointLight( 0xffffff, 0.5, 0 );
-
-    lights[0].position.set( -300, 600, 200 );
-    lights[1].position.set( 100, 600, 100 );
-    lights[2].position.set( -100, -300, 1000 );
-
-    scene.add( lights[0] );
-    scene.add( lights[1] );
-    scene.add( lights[2] );
-
-  }
-
   function init() {
 
     container = document.getElementById( 'container' );
 
     camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 10000 );
-    camera.position.z = 800;
+    camera.position.z = 500;
 
     scene = new THREE.Scene();
-
-    //addLights();
 
     var btns = document.getElementById('buttons').children;
 
@@ -534,7 +508,6 @@
         video_texture.format = THREE.RGBFormat;
 
         material.uniforms[ 'displacementMap' ].value = video_texture;
-        //material2.displacementMap = video_texture;
 
       });
 
@@ -548,13 +521,13 @@
 
     textureSphere = THREE.ImageUtils.loadTexture( "../image/pai_pano_sm.jpg" );
     //textureSphere.mapping = THREE.SphericalReflectionMapping;
-    //textureSphere.mapping = THREE.EquirectangularRefractionMapping;
+    textureSphere.mapping = THREE.EquirectangularRefractionMapping;
 
     var sphere = new THREE.Mesh( new THREE.SphereGeometry( 1000, 60, 60 ),
             new THREE.MeshBasicMaterial( { map: textureSphere } ) );
     sphere.scale.x = -1;
     sphere.doubleSided = true;
-    //scene.add( sphere );
+    scene.add( sphere );
 
     setSmoothingPass();
 
